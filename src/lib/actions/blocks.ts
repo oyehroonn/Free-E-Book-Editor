@@ -1,25 +1,10 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
-import { blocksDb, pagesDb } from "@/lib/db"
-import { generateId } from "@/lib/utils"
+import { backendFetch } from "@/lib/backend-api"
 import type { Block, BlockType, BlockData, ActionResult } from "@/types"
 
-function getDefaultData(type: BlockType): BlockData {
-  switch (type) {
-    case "TEXT":
-      return { type: "TEXT", content: "<p></p>" }
-    case "HEADING":
-      return { type: "HEADING", content: "Heading", level: 2 }
-    case "IMAGE":
-      return { type: "IMAGE", url: "", alt: "" }
-    case "YOUTUBE":
-      return { type: "YOUTUBE", videoId: "", url: "" }
-    case "QUOTE":
-      return { type: "QUOTE", content: "" }
-    case "DIVIDER":
-      return { type: "DIVIDER", style: "solid" }
-  }
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Request failed"
 }
 
 export async function addBlock(
@@ -27,83 +12,61 @@ export async function addBlock(
   type: BlockType,
   afterOrder?: number
 ): Promise<ActionResult<Block>> {
-  const page = pagesDb.findById(pageId)
-  if (!page) return { success: false, error: "Page not found" }
+  try {
+    const data = await backendFetch<Block>("/blocks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pageId, type, afterOrder }),
+    })
 
-  const existingBlocks = blocksDb.findByPageId(pageId)
-
-  let order: number
-  if (afterOrder !== undefined) {
-    // Shift blocks after insertion point
-    const all = blocksDb.findAll()
-    for (const b of all) {
-      if (b.pageId === pageId && b.order > afterOrder) {
-        blocksDb.update(b.id, { order: b.order + 1 })
-      }
-    }
-    order = afterOrder + 1
-  } else {
-    order = existingBlocks.length
+    return { success: true, data }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
   }
-
-  const now = new Date().toISOString()
-  const block: Block = {
-    id: generateId(),
-    pageId,
-    type,
-    order,
-    data: getDefaultData(type),
-    createdAt: now,
-    updatedAt: now,
-  }
-
-  blocksDb.create(block)
-  revalidatePath(`/edit/${page.bookId}`)
-  return { success: true, data: block }
 }
 
 export async function updateBlock(
   blockId: string,
   data: BlockData
 ): Promise<ActionResult<Block>> {
-  const block = blocksDb.findById(blockId)
-  if (!block) return { success: false, error: "Block not found" }
+  try {
+    const updated = await backendFetch<Block>(`/blocks/${blockId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data }),
+    })
 
-  const updated = blocksDb.update(blockId, { data })
-  if (!updated) return { success: false, error: "Failed to update block" }
-
-  const page = pagesDb.findById(block.pageId)
-  if (page) revalidatePath(`/edit/${page.bookId}`)
-  return { success: true, data: updated }
+    return { success: true, data: updated }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
 }
 
 export async function deleteBlock(blockId: string): Promise<ActionResult> {
-  const block = blocksDb.findById(blockId)
-  if (!block) return { success: false, error: "Block not found" }
-
-  const pageId = block.pageId
-  const deletedOrder = block.order
-  blocksDb.delete(blockId)
-
-  // Renumber remaining blocks
-  const remaining = blocksDb.findByPageId(pageId)
-  remaining
-    .filter((b) => b.order > deletedOrder)
-    .forEach((b) => {
-      blocksDb.update(b.id, { order: b.order - 1 })
+  try {
+    await backendFetch<{ pageId: string }>(`/blocks/${blockId}`, {
+      method: "DELETE",
     })
 
-  const page = pagesDb.findById(pageId)
-  if (page) revalidatePath(`/edit/${page.bookId}`)
-  return { success: true, data: undefined }
+    return { success: true, data: undefined }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
 }
 
 export async function reorderBlocks(
   pageId: string,
   orderedBlockIds: string[]
 ): Promise<ActionResult> {
-  blocksDb.reorderBlocks(pageId, orderedBlockIds)
-  const page = pagesDb.findById(pageId)
-  if (page) revalidatePath(`/edit/${page.bookId}`)
-  return { success: true, data: undefined }
+  try {
+    await backendFetch<{ pageId: string }>("/blocks/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pageId, orderedBlockIds }),
+    })
+
+    return { success: true, data: undefined }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
 }

@@ -1,0 +1,10 @@
+.next/
+node_modules/
+tsconfig.tsbuildinfo
+next-env.d.ts
+__pycache__/
+*.pyc
+data/*.csv
+data/*.json
+public/uploads/
+.env.local

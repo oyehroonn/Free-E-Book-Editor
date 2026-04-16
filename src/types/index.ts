@@ -90,8 +90,11 @@ export type UserRole = "admin" | "user"
 export type User = {
   id: string
   username: string
+  displayName?: string
   email: string
+  avatarUrl?: string
   role: UserRole
+  developerMode: boolean
   createdAt: string
   updatedAt: string
 }
@@ -112,6 +115,33 @@ export type ApiKey = {
 export type GeneratedApiKey = {
   apiKey: ApiKey
   generatedKey: string
+}
+
+export type AnalyticsSummary = {
+  totalBooks: number
+  publishedBooks: number
+  draftBooks: number
+  totalViews: number
+  publishedViews: number
+}
+
+export type AnalyticsBook = {
+  id: string
+  title: string
+  slug: string
+  status: "draft" | "published"
+  authorName: string
+  coverImage?: string
+  viewCount: number
+  publishedAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type AnalyticsOverview = {
+  summary: AnalyticsSummary
+  topBook?: AnalyticsBook | null
+  books: AnalyticsBook[]
 }
 
 // ─── Enriched Types ───────────────────────────────────────────────────────────

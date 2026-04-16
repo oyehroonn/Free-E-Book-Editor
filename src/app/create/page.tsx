@@ -10,6 +10,7 @@ export const metadata = {
 
 export default async function CreatePage() {
   const currentUser = await requireCurrentUser("/create")
+  const accountName = currentUser.displayName ?? currentUser.username
 
   return (
     <div className="min-h-screen flex flex-col bg-cream">
@@ -21,11 +22,11 @@ export default async function CreatePage() {
               Create a new book
             </h1>
             <p className="text-ink-muted">
-              You are signed in as <span className="font-medium text-ink">{currentUser.username}</span>. Fill in the basics now and edit the rest later in the ebook editor.
+              You are signed in as <span className="font-medium text-ink">{accountName}</span>. Fill in the basics now and edit the rest later in the ebook editor.
             </p>
           </div>
           <div className="bg-paper rounded-2xl border border-border shadow-card p-8">
-            <CreateBookForm defaultAuthorName={currentUser.username} />
+            <CreateBookForm defaultAuthorName={accountName} />
           </div>
         </div>
       </main>

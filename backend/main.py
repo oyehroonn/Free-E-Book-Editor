@@ -57,9 +57,12 @@ BOOK_COLUMNS = [
 USER_COLUMNS = [
     "id",
     "username",
+    "displayName",
     "email",
+    "avatarUrl",
     "password",
     "role",
+    "developerMode",
     "createdAt",
     "updatedAt",
 ]
@@ -129,6 +132,15 @@ class LoginPayload(BaseModel):
 
 class CreateApiKeyPayload(BaseModel):
     name: str = Field(min_length=1, max_length=80)
+
+
+class UpdateProfilePayload(BaseModel):
+    displayName: str | None = Field(default=None, max_length=80)
+    avatarUrl: str | None = None
+
+
+class UpdateDeveloperModePayload(BaseModel):
+    enabled: bool
 
 
 class CreateBookPayload(BaseModel):
@@ -240,6 +252,16 @@ def parse_optional(value: Any) -> str | None:
         return None
     value_str = str(value)
     return value_str if value_str else None
+
+
+def parse_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return normalize_optional(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def serialize_bool(value: bool) -> str:
+    return "true" if value else "false"
 
 
 def write_csv(path: Path, dataframe: pd.DataFrame, columns: list[str]) -> None:
@@ -423,8 +445,11 @@ def serialize_user(row: pd.Series) -> dict[str, Any]:
     return {
         "id": row["id"],
         "username": row["username"],
+        "displayName": parse_optional(row.get("displayName")) or row["username"],
         "email": row["email"],
+        "avatarUrl": parse_optional(row.get("avatarUrl")),
         "role": row["role"] or "user",
+        "developerMode": parse_bool(row.get("developerMode")),
         "createdAt": row["createdAt"],
         "updatedAt": row["updatedAt"],
     }
@@ -460,6 +485,21 @@ def serialize_book(row: pd.Series) -> dict[str, Any]:
         "viewCount": int(row["viewCount"]),
         "tags": json.loads(row["tags"] or "[]"),
         "category": parse_optional(row["category"]),
+        "publishedAt": parse_optional(row["publishedAt"]),
+        "createdAt": row["createdAt"],
+        "updatedAt": row["updatedAt"],
+    }
+
+
+def serialize_analytics_book(row: pd.Series) -> dict[str, Any]:
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "slug": row["slug"],
+        "status": row["status"],
+        "authorName": row["authorName"],
+        "coverImage": parse_optional(row["coverImage"]),
+        "viewCount": int(row["viewCount"]),
         "publishedAt": parse_optional(row["publishedAt"]),
         "createdAt": row["createdAt"],
         "updatedAt": row["updatedAt"],
@@ -621,7 +661,10 @@ def get_user_row_from_api_key(request: Request) -> pd.Series | None:
 
 
 def get_current_user_row(request: Request) -> pd.Series | None:
-    return get_session_user_row(request) or get_user_row_from_api_key(request)
+    session_user = get_session_user_row(request)
+    if session_user is not None:
+        return session_user
+    return get_user_row_from_api_key(request)
 
 
 def require_session_user(request: Request) -> pd.Series:
@@ -653,6 +696,12 @@ def can_manage_book(user_row: pd.Series | None, book_row: pd.Series) -> bool:
     if user_is_admin(user_row):
         return True
     return book_row.get("ownerId", "") == user_row["id"]
+
+
+def get_books_for_user(user_row: pd.Series, books_df: pd.DataFrame) -> pd.DataFrame:
+    if user_is_admin(user_row):
+        return books_df.copy()
+    return books_df[books_df["ownerId"] == user_row["id"]].copy()
 
 
 def ensure_book_owner(request: Request, book_row: pd.Series) -> pd.Series:
@@ -737,9 +786,12 @@ def register_user(payload: RegisterPayload) -> dict[str, Any]:
                 {
                     "id": generate_id(),
                     "username": username,
+                    "displayName": username,
                     "email": email,
+                    "avatarUrl": "",
                     "password": password,
                     "role": role,
+                    "developerMode": "false",
                     "createdAt": current_time,
                     "updatedAt": current_time,
                 }
@@ -823,6 +875,46 @@ def logout_user(request: Request) -> dict[str, bool]:
 def get_current_user(request: Request) -> dict[str, Any]:
     user_row = require_authenticated_user(request)
     return serialize_user(user_row)
+
+
+@app.patch("/settings/profile")
+def update_profile_settings(payload: UpdateProfilePayload, request: Request) -> dict[str, Any]:
+    current_user = require_authenticated_user(request)
+
+    with DB_LOCK:
+        users_df = read_users_df()
+        matches = users_df[users_df["id"] == current_user["id"]]
+        if matches.empty:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        index = matches.index[0]
+        display_name = (payload.displayName or "").strip() or users_df.loc[index, "username"]
+        users_df.loc[index, "displayName"] = display_name
+        users_df.loc[index, "avatarUrl"] = normalize_optional(payload.avatarUrl)
+        users_df.loc[index, "updatedAt"] = now_iso()
+        write_users_df(users_df)
+        updated_row = users_df.loc[index]
+
+    return serialize_user(updated_row)
+
+
+@app.patch("/settings/developer-mode")
+def update_developer_mode(payload: UpdateDeveloperModePayload, request: Request) -> dict[str, Any]:
+    current_user = require_authenticated_user(request)
+
+    with DB_LOCK:
+        users_df = read_users_df()
+        matches = users_df[users_df["id"] == current_user["id"]]
+        if matches.empty:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        index = matches.index[0]
+        users_df.loc[index, "developerMode"] = serialize_bool(payload.enabled)
+        users_df.loc[index, "updatedAt"] = now_iso()
+        write_users_df(users_df)
+        updated_row = users_df.loc[index]
+
+    return serialize_user(updated_row)
 
 
 @app.get("/developer/api-keys", summary="List API keys for the signed-in user")
@@ -929,14 +1021,35 @@ def list_published_books(
 def list_my_books(request: Request) -> list[dict[str, Any]]:
     current_user = require_authenticated_user(request)
     books_df = read_books_df()
-
-    if user_is_admin(current_user):
-        mine = books_df.copy()
-    else:
-        mine = books_df[books_df["ownerId"] == current_user["id"]].copy()
+    mine = get_books_for_user(current_user, books_df)
 
     mine = mine.sort_values(["updatedAt", "createdAt"], ascending=[False, False])
     return [serialize_book(row) for _, row in mine.iterrows()]
+
+
+@app.get("/analytics/overview")
+def get_analytics_overview(request: Request) -> dict[str, Any]:
+    current_user = require_authenticated_user(request)
+    books_df = get_books_for_user(current_user, read_books_df())
+    books_df = books_df.sort_values(["viewCount", "updatedAt"], ascending=[False, False])
+
+    published_books = books_df[books_df["status"] == "published"].copy()
+    draft_books = books_df[books_df["status"] == "draft"].copy()
+    total_views = int(books_df["viewCount"].sum()) if not books_df.empty else 0
+    published_views = int(published_books["viewCount"].sum()) if not published_books.empty else 0
+    top_book = serialize_analytics_book(books_df.iloc[0]) if not books_df.empty else None
+
+    return {
+        "summary": {
+            "totalBooks": int(len(books_df.index)),
+            "publishedBooks": int(len(published_books.index)),
+            "draftBooks": int(len(draft_books.index)),
+            "totalViews": total_views,
+            "publishedViews": published_views,
+        },
+        "topBook": top_book,
+        "books": [serialize_analytics_book(row) for _, row in books_df.iterrows()],
+    }
 
 
 @app.get("/books/{book_id}")

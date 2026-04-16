@@ -42,7 +42,8 @@ export async function createApiKey(formData: FormData): Promise<ActionResult<Gen
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(parsed.data),
     })
-    revalidatePath("/dashboard/developer")
+    revalidatePath("/settings")
+    revalidatePath("/settings/developer")
     return { success: true, data: result }
   } catch (error) {
     return { success: false, error: getErrorMessage(error) }
@@ -54,7 +55,8 @@ export async function revokeApiKey(keyId: string): Promise<ActionResult<ApiKey>>
     const result = await backendFetchWithSession<ApiKey>(`/developer/api-keys/${keyId}`, {
       method: "DELETE",
     })
-    revalidatePath("/dashboard/developer")
+    revalidatePath("/settings")
+    revalidatePath("/settings/developer")
     return { success: true, data: result }
   } catch (error) {
     return { success: false, error: getErrorMessage(error) }

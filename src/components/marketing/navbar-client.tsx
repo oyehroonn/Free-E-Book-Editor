@@ -2,9 +2,10 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BookOpen, LogIn, LogOut, Menu, PenSquare, UserPlus, X } from "lucide-react"
+import { BookOpen, LogIn, LogOut, Menu, PenSquare, Settings, UserPlus, X } from "lucide-react"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
+import { UserAvatar } from "@/components/profile/user-avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -20,6 +21,7 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const accountName = currentUser ? currentUser.displayName ?? currentUser.username : ""
 
   const navLinks = currentUser
     ? [
@@ -75,10 +77,20 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
           <div className="hidden md:flex items-center gap-3">
             {currentUser ? (
               <>
+                <Button asChild variant="ghost" size="icon-sm" className="rounded-full">
+                  <Link href="/settings" aria-label="Open settings">
+                    <Settings className="h-4 w-4" />
+                  </Link>
+                </Button>
                 <div className="flex items-center gap-2 rounded-full border border-border bg-paper px-3 py-1.5">
+                  <UserAvatar
+                    name={accountName}
+                    avatarUrl={currentUser.avatarUrl}
+                    className="h-8 w-8 text-xs"
+                  />
                   <div className="leading-tight">
-                    <p className="text-sm font-medium text-ink">{currentUser.username}</p>
-                    <p className="text-[11px] text-ink-faint">{currentUser.email}</p>
+                    <p className="text-sm font-medium text-ink">{accountName}</p>
+                    <p className="text-[11px] text-ink-faint">@{currentUser.username}</p>
                   </div>
                   <Badge variant={currentUser.role === "admin" ? "gold" : "cream"}>
                     {currentUser.role}
@@ -145,15 +157,28 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
             <div className="pt-3 space-y-3">
               <div className="rounded-xl border border-border bg-paper px-3 py-3">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-ink">{currentUser.username}</p>
-                    <p className="truncate text-xs text-ink-faint">{currentUser.email}</p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <UserAvatar
+                      name={accountName}
+                      avatarUrl={currentUser.avatarUrl}
+                      className="h-9 w-9 text-xs"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">{accountName}</p>
+                      <p className="truncate text-xs text-ink-faint">@{currentUser.username}</p>
+                    </div>
                   </div>
                   <Badge variant={currentUser.role === "admin" ? "gold" : "cream"}>
                     {currentUser.role}
                   </Badge>
                 </div>
               </div>
+              <Button asChild variant="outline" size="sm" className="w-full">
+                <Link href="/settings" onClick={() => setMobileOpen(false)}>
+                  <Settings className="h-3.5 w-3.5" />
+                  Settings
+                </Link>
+              </Button>
               <Button asChild size="sm" className="w-full">
                 <Link href="/create" onClick={() => setMobileOpen(false)}>
                   <PenSquare className="h-3.5 w-3.5" />

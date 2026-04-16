@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, BookOpen, Code2, Sparkles } from "lucide-react"
+import { ArrowRight, BookOpen, Sparkles } from "lucide-react"
 import { Navbar } from "@/components/marketing/navbar"
 import { Footer } from "@/components/marketing/footer"
 import { DashboardBookCard } from "@/components/dashboard/dashboard-book-card"
@@ -17,6 +17,7 @@ export const metadata = {
 export default async function DashboardPage() {
   const currentUser = await requireCurrentUser("/dashboard")
   const books = await getMyBooks()
+  const accountName = currentUser.displayName ?? currentUser.username
 
   return (
     <div className="min-h-screen flex flex-col bg-cream">
@@ -33,21 +34,16 @@ export default async function DashboardPage() {
                 </Badge>
               </div>
               <h1 className="font-serif text-4xl font-bold text-forest">
-                {currentUser.username}&apos;s flipbooks
+                {accountName}&apos;s flipbooks
               </h1>
               <p className="mt-3 max-w-2xl text-ink-muted">
                 Drafts stay private to you until you publish them. Once a flipbook is public,
                 it goes live in Explore and the featured section and can be shared by link.
+                Account and developer controls now live under Settings.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button asChild variant="outline" size="lg">
-                <Link href="/dashboard/developer">
-                  <Code2 className="h-4 w-4" />
-                  Docs & API
-                </Link>
-              </Button>
               <Button asChild size="lg">
                 <Link href="/create">
                   <Sparkles className="h-4 w-4" />
@@ -72,12 +68,6 @@ export default async function DashboardPage() {
                 you are ready for it to show up to everyone else.
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/dashboard/developer">
-                    <Code2 className="h-4 w-4" />
-                    Open Docs & API
-                  </Link>
-                </Button>
                 <Button asChild size="lg">
                   <Link href="/create">
                     Create Your First Flipbook

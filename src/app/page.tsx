@@ -22,6 +22,7 @@ export default async function LandingPage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
+      <main id="main-content" className="flex-1">
       {/* ─── Hero ──────────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-gradient-cream pt-20 pb-28 lg:pt-28 lg:pb-36">
         {/* Background decoration */}
@@ -225,6 +226,7 @@ export default async function LandingPage() {
           </Button>
         </div>
       </section>
+      </main>
 
       <Footer />
     </div>

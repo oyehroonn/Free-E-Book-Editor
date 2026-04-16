@@ -60,6 +60,7 @@ export function DashboardBookCard({ book }: DashboardBookCardProps) {
             <p>Author: {book.authorName}</p>
             <p>Updated: {formatDate(book.updatedAt)}</p>
             <p>Slug: /read/{book.slug}</p>
+            <p>Views: {book.viewCount}</p>
             <p>
               {isPublished
                 ? "Visible in Explore and Featured"

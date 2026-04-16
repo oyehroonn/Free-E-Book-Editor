@@ -41,7 +41,10 @@ export default async function LandingPage() {
           </div>
 
           <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl font-bold text-forest leading-tight tracking-tight text-balance mb-6">
-            {messages.landing.heroTitle}
+            {messages.landing.heroTitleLead}
+            <br />
+            <span className="text-gold italic">{messages.landing.heroTitleAccent}</span>
+            {messages.landing.heroTitleTail}
           </h1>
 
           <p className="mx-auto max-w-2xl text-lg sm:text-xl text-ink-light leading-relaxed mb-10">
@@ -198,7 +201,8 @@ export default async function LandingPage() {
       <section className="py-24 bg-gradient-forest text-cream">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-serif text-4xl sm:text-5xl font-bold mb-6 text-balance">
-            {messages.landing.ctaTitle}
+            {messages.landing.ctaTitleLead}{" "}
+            <span className="text-gold-400 italic">{messages.landing.ctaTitleAccent}</span>
           </h2>
           <p className="text-cream-300 text-lg mb-10 max-w-xl mx-auto">
             {messages.landing.ctaDescription}

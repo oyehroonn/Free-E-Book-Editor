@@ -41,6 +41,9 @@ const en = {
   landing: {
     heroBadge: "Premium Digital Publishing Platform",
     heroTitle: "Your stories, beautifully bound.",
+    heroTitleLead: "Your stories,",
+    heroTitleAccent: "beautifully",
+    heroTitleTail: " bound.",
     heroDescription:
       "Create stunning digital flipbooks that read like real books. Add rich text, images, and YouTube videos. Share with the world.",
     createButton: "Create Your Book",
@@ -84,6 +87,8 @@ const en = {
     recentDescription: "Explore books created by writers around the world.",
     viewAll: "View All",
     ctaTitle: "Ready to write your first book?",
+    ctaTitleLead: "Ready to write your",
+    ctaTitleAccent: "first book?",
     ctaDescription:
       "Create a basic account, start a draft flipbook, and publish it only when you are ready to share it with the world.",
     ctaButton: "Create an Account",
@@ -253,6 +258,9 @@ export const DICTIONARIES: Record<AppLocale, Dictionary> = {
     landing: {
       heroBadge: "Plataforma premium de publicación digital",
       heroTitle: "Tus historias, bellamente encuadernadas.",
+      heroTitleLead: "Tus historias,",
+      heroTitleAccent: "bellamente",
+      heroTitleTail: " encuadernadas.",
       heroDescription:
         "Crea flipbooks digitales que se sienten como libros reales. Añade texto, imágenes y videos de YouTube. Compártelos con el mundo.",
       createButton: "Crear tu libro",
@@ -296,6 +304,8 @@ export const DICTIONARIES: Record<AppLocale, Dictionary> = {
       recentDescription: "Explora libros creados por autores de todo el mundo.",
       viewAll: "Ver todo",
       ctaTitle: "¿Listo para escribir tu primer libro?",
+      ctaTitleLead: "¿Listo para escribir tu",
+      ctaTitleAccent: "primer libro?",
       ctaDescription:
         "Crea una cuenta básica, empieza un borrador y publícalo solo cuando quieras compartirlo con el mundo.",
       ctaButton: "Crear una cuenta",
@@ -456,6 +466,9 @@ export const DICTIONARIES: Record<AppLocale, Dictionary> = {
     landing: {
       heroBadge: "Plateforme premium de publication numérique",
       heroTitle: "Vos histoires, magnifiquement reliées.",
+      heroTitleLead: "Vos histoires,",
+      heroTitleAccent: "magnifiquement",
+      heroTitleTail: " reliées.",
       heroDescription:
         "Créez de superbes flipbooks numériques qui se lisent comme de vrais livres. Ajoutez du texte, des images et des vidéos YouTube. Partagez-les avec le monde.",
       createButton: "Créer votre livre",
@@ -499,6 +512,8 @@ export const DICTIONARIES: Record<AppLocale, Dictionary> = {
       recentDescription: "Découvrez des livres créés par des auteurs du monde entier.",
       viewAll: "Voir tout",
       ctaTitle: "Prêt à écrire votre premier livre ?",
+      ctaTitleLead: "Prêt à écrire votre",
+      ctaTitleAccent: "premier livre ?",
       ctaDescription:
         "Créez un compte de base, démarrez un brouillon et publiez-le uniquement lorsque vous êtes prêt à le partager.",
       ctaButton: "Créer un compte",
@@ -659,6 +674,9 @@ export const DICTIONARIES: Record<AppLocale, Dictionary> = {
     landing: {
       heroBadge: "Premium-Plattform für digitales Publizieren",
       heroTitle: "Deine Geschichten, schön gebunden.",
+      heroTitleLead: "Deine Geschichten,",
+      heroTitleAccent: "schön",
+      heroTitleTail: " gebunden.",
       heroDescription:
         "Erstelle digitale Flipbooks, die sich wie echte Bücher lesen. Füge Text, Bilder und YouTube-Videos hinzu und teile sie mit der Welt.",
       createButton: "Dein Buch erstellen",
@@ -702,6 +720,8 @@ export const DICTIONARIES: Record<AppLocale, Dictionary> = {
       recentDescription: "Entdecke Bücher von Autorinnen und Autoren aus aller Welt.",
       viewAll: "Alle anzeigen",
       ctaTitle: "Bereit für dein erstes Buch?",
+      ctaTitleLead: "Bereit für dein",
+      ctaTitleAccent: "erstes Buch?",
       ctaDescription:
         "Erstelle ein einfaches Konto, beginne einen Entwurf und veröffentliche ihn erst, wenn du ihn teilen möchtest.",
       ctaButton: "Konto erstellen",
@@ -862,6 +882,9 @@ export const DICTIONARIES: Record<AppLocale, Dictionary> = {
     landing: {
       heroBadge: "Plataforma premium de publicação digital",
       heroTitle: "Suas histórias, lindamente encadernadas.",
+      heroTitleLead: "Suas histórias,",
+      heroTitleAccent: "lindamente",
+      heroTitleTail: " encadernadas.",
       heroDescription:
         "Crie flipbooks digitais impressionantes que parecem livros reais. Adicione texto, imagens e vídeos do YouTube. Compartilhe com o mundo.",
       createButton: "Criar seu livro",
@@ -905,6 +928,8 @@ export const DICTIONARIES: Record<AppLocale, Dictionary> = {
       recentDescription: "Explore livros criados por autores do mundo inteiro.",
       viewAll: "Ver tudo",
       ctaTitle: "Pronto para escrever seu primeiro livro?",
+      ctaTitleLead: "Pronto para escrever seu",
+      ctaTitleAccent: "primeiro livro?",
       ctaDescription:
         "Crie uma conta básica, comece um rascunho e publique só quando estiver pronto para compartilhar com o mundo.",
       ctaButton: "Criar uma conta",

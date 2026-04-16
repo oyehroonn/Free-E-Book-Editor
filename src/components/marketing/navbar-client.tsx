@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BookOpen, LogIn, LogOut, Menu, PenSquare, Settings, UserPlus, X } from "lucide-react"
+import { BookOpen, Home, LogIn, LogOut, Menu, PenSquare, Search, Settings, UserPlus, X } from "lucide-react"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import { UserAvatar } from "@/components/profile/user-avatar"
@@ -25,10 +25,15 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
 
   const navLinks = currentUser
     ? [
-        { href: "/explore", label: "Explore" },
-        { href: "/dashboard", label: "Dashboard" },
+        { href: "/", label: "Home", icon: Home },
+        { href: "/explore", label: "Explore", icon: Search },
+        { href: "/dashboard", label: "Dashboard", icon: BookOpen },
+        { href: "/create", label: "Create", icon: PenSquare },
       ]
-    : [{ href: "/explore", label: "Explore" }]
+    : [
+        { href: "/", label: "Home", icon: Home },
+        { href: "/explore", label: "Explore", icon: Search },
+      ]
 
   function handleLogout() {
     startTransition(async () => {
@@ -57,18 +62,20 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav aria-label="Primary navigation" className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={pathname === link.href ? "page" : undefined}
                 className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                  "inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
                   pathname === link.href
                     ? "text-forest bg-forest/8"
                     : "text-ink-light hover:text-ink hover:bg-cream-200"
                 )}
               >
+                <link.icon className="h-4 w-4" />
                 {link.label}
               </Link>
             ))}
@@ -129,6 +136,8 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
             className="md:hidden p-2 text-ink-light hover:text-ink"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-site-navigation"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -136,19 +145,24 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t border-border/60 bg-cream px-4 pb-4 pt-3 space-y-1">
+        <div
+          id="mobile-site-navigation"
+          className="md:hidden border-t border-border/60 bg-cream px-4 pb-4 pt-3 space-y-1"
+        >
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
+              aria-current={pathname === link.href ? "page" : undefined}
               className={cn(
-                "block px-3 py-2 rounded-md text-sm font-medium",
+                "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium",
                 pathname === link.href
                   ? "text-forest bg-forest/8"
                   : "text-ink-light hover:bg-cream-200"
               )}
               onClick={() => setMobileOpen(false)}
             >
+              <link.icon className="h-4 w-4" />
               {link.label}
             </Link>
           ))}

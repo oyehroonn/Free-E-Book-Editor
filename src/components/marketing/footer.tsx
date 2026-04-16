@@ -19,9 +19,10 @@ export function Footer() {
             </p>
           </div>
 
-          <nav className="flex flex-wrap gap-x-8 gap-y-3">
+          <nav aria-label="Footer navigation" className="flex flex-wrap gap-x-8 gap-y-3">
             <div className="flex flex-col gap-2">
               <p className="text-xs font-semibold text-ink uppercase tracking-wider">Platform</p>
+              <Link href="/" className="text-sm text-ink-muted hover:text-ink transition-colors">Home</Link>
               <Link href="/explore" className="text-sm text-ink-muted hover:text-ink transition-colors">Explore Books</Link>
               <Link href="/create" className="text-sm text-ink-muted hover:text-ink transition-colors">Create a Book</Link>
               <a href="mailto:info@techrealm.online" className="text-sm text-ink-muted hover:text-ink transition-colors">

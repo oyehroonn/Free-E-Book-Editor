@@ -44,6 +44,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body>
+        <a
+          href="#main-content"
+          className="sr-only absolute left-4 top-4 z-[100] rounded-md bg-paper px-4 py-2 text-sm font-medium text-ink shadow-card focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-gold"
+        >
+          Skip to main content
+        </a>
         {children}
         <Toaster
           position="bottom-right"

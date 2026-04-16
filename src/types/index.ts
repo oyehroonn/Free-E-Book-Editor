@@ -96,6 +96,24 @@ export type User = {
   updatedAt: string
 }
 
+export type ApiKey = {
+  id: string
+  userId: string
+  name: string
+  prefix: string
+  preview: string
+  createdAt: string
+  updatedAt: string
+  lastUsedAt?: string
+  revokedAt?: string
+  isRevoked: boolean
+}
+
+export type GeneratedApiKey = {
+  apiKey: ApiKey
+  generatedKey: string
+}
+
 // ─── Enriched Types ───────────────────────────────────────────────────────────
 
 export type PageWithBlocks = Page & {

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, BookOpen, Sparkles } from "lucide-react"
+import { ArrowRight, BookOpen, Code2, Sparkles } from "lucide-react"
 import { Navbar } from "@/components/marketing/navbar"
 import { Footer } from "@/components/marketing/footer"
 import { DashboardBookCard } from "@/components/dashboard/dashboard-book-card"
@@ -41,12 +41,20 @@ export default async function DashboardPage() {
               </p>
             </div>
 
-            <Button asChild size="lg">
-              <Link href="/create">
-                <Sparkles className="h-4 w-4" />
-                Create New Flipbook
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="lg">
+                <Link href="/dashboard/developer">
+                  <Code2 className="h-4 w-4" />
+                  Docs & API
+                </Link>
+              </Button>
+              <Button asChild size="lg">
+                <Link href="/create">
+                  <Sparkles className="h-4 w-4" />
+                  Create New Flipbook
+                </Link>
+              </Button>
+            </div>
           </div>
         </section>
 
@@ -63,12 +71,20 @@ export default async function DashboardPage() {
                 Start your first draft, edit it in the ebook editor, and publish it only when
                 you are ready for it to show up to everyone else.
               </p>
-              <Button asChild size="lg" className="mt-8">
-                <Link href="/create">
-                  Create Your First Flipbook
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <Button asChild variant="outline" size="lg">
+                  <Link href="/dashboard/developer">
+                    <Code2 className="h-4 w-4" />
+                    Open Docs & API
+                  </Link>
+                </Button>
+                <Button asChild size="lg">
+                  <Link href="/create">
+                    Create Your First Flipbook
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-5">

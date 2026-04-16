@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, BookOpen, Home, Search, Sparkles } from "lucide-react"
+import { ArrowRight, BookOpen, Sparkles } from "lucide-react"
 import { Navbar } from "@/components/marketing/navbar"
 import { Footer } from "@/components/marketing/footer"
 import { DashboardBookCard } from "@/components/dashboard/dashboard-book-card"
@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { requireCurrentUser } from "@/lib/auth"
 import { getMyBooks } from "@/lib/actions/books"
+import { getDictionary, getLocaleContext } from "@/lib/i18n"
+import { getRoleLabel } from "@/lib/i18n-data"
 
 export const runtime = "edge"
 
@@ -16,8 +18,11 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const currentUser = await requireCurrentUser("/dashboard")
-  const books = await getMyBooks()
-  const accountName = currentUser.displayName ?? currentUser.username
+  const [books, messages, { locale }] = await Promise.all([
+    getMyBooks(),
+    getDictionary(),
+    getLocaleContext(),
+  ])
 
   return (
     <div className="min-h-screen flex flex-col bg-cream">
@@ -28,41 +33,25 @@ export default async function DashboardPage() {
           <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 sm:px-6 lg:px-8 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge variant="gold">Creator Dashboard</Badge>
+                <Badge variant="gold">{messages.dashboard.creatorBadge}</Badge>
                 <Badge variant={currentUser.role === "admin" ? "gold" : "cream"}>
-                  {currentUser.role}
+                  {getRoleLabel(locale, currentUser.role)}
                 </Badge>
               </div>
               <h1 className="font-serif text-4xl font-bold text-forest">
-                {accountName}&apos;s flipbooks
+                {messages.dashboard.title}
               </h1>
               <p className="mt-3 max-w-2xl text-ink-muted">
-                Drafts stay private to you until you publish them. Once a flipbook is public,
-                it goes live in Explore and the featured section and can be shared by link.
-                Account and developer controls now live under Settings.
+                {messages.dashboard.description}
               </p>
             </div>
 
-            <nav aria-label="Dashboard shortcuts" className="flex flex-wrap gap-2">
-              <Button asChild variant="outline" size="lg">
-                <Link href="/">
-                  <Home className="h-4 w-4" />
-                  Home
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/explore">
-                  <Search className="h-4 w-4" />
-                  Explore
-                </Link>
-              </Button>
-              <Button asChild size="lg">
-                <Link href="/create">
-                  <Sparkles className="h-4 w-4" />
-                  Create New Flipbook
-                </Link>
-              </Button>
-            </nav>
+            <Button asChild size="lg">
+              <Link href="/create">
+                <Sparkles className="h-4 w-4" />
+                {messages.dashboard.createButton}
+              </Link>
+            </Button>
           </div>
         </section>
 
@@ -73,37 +62,22 @@ export default async function DashboardPage() {
                 <BookOpen className="h-6 w-6 text-forest" />
               </div>
               <h2 className="mt-5 font-serif text-3xl font-semibold text-ink">
-                No flipbooks yet
+                {messages.dashboard.emptyTitle}
               </h2>
               <p className="mx-auto mt-3 max-w-md text-ink-muted">
-                Start your first draft, edit it in the ebook editor, and publish it only when
-                you are ready for it to show up to everyone else.
+                {messages.dashboard.emptyDescription}
               </p>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/">
-                    <Home className="h-4 w-4" />
-                    Back Home
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/explore">
-                    <Search className="h-4 w-4" />
-                    Browse Explore
-                  </Link>
-                </Button>
-                <Button asChild size="lg">
-                  <Link href="/create">
-                    Create Your First Flipbook
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
+              <Button asChild size="lg" className="mt-8">
+                <Link href="/create">
+                  {messages.dashboard.emptyButton}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
             </div>
           ) : (
             <div className="space-y-5">
               {books.map((book) => (
-                <DashboardBookCard key={book.id} book={book} />
+                <DashboardBookCard key={book.id} book={book} locale={locale} copy={messages.dashboard.card} />
               ))}
             </div>
           )}

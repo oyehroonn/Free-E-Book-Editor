@@ -6,6 +6,7 @@ import { AuthShell } from "@/components/auth/auth-shell"
 import { LoginForm } from "@/components/auth/login-form"
 import { Button } from "@/components/ui/button"
 import { getCurrentUser } from "@/lib/auth"
+import { getDictionary } from "@/lib/i18n"
 
 export const runtime = "edge"
 
@@ -18,7 +19,7 @@ interface LoginPageProps {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const currentUser = await getCurrentUser()
+  const [currentUser, messages] = await Promise.all([getCurrentUser(), getDictionary()])
   const params = await searchParams
   const nextPath = params.next && params.next.startsWith("/") ? params.next : "/dashboard"
 
@@ -35,23 +36,24 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <Button asChild variant="outline" size="sm">
               <Link href="/">
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Back Home
+                {messages.navbar.home}
               </Link>
             </Button>
             <Button asChild variant="ghost" size="sm">
               <Link href="/explore">
                 <Search className="h-3.5 w-3.5" />
-                Explore Library
+                {messages.navbar.explore}
               </Link>
             </Button>
           </nav>
           <AuthShell
-            title="Welcome back"
-            description="Sign in to manage your flipbooks, publish them when ready, and keep drafts private until they go live."
-            form={<LoginForm nextPath={nextPath} />}
-            alternateText="Need an account?"
-            alternateLabel="Create one"
+            title={messages.login.title}
+            description={messages.login.description}
+            form={<LoginForm nextPath={nextPath} copy={messages.login.form} />}
+            alternateText={messages.login.alternateText}
+            alternateLabel={messages.login.alternateLabel}
             alternateHref={`/register?next=${encodeURIComponent(nextPath)}`}
+            copy={messages.authShell}
           />
         </div>
       </main>

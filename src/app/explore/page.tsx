@@ -1,15 +1,14 @@
-import Link from "next/link"
 import { Suspense } from "react"
-import { Home, LayoutDashboard, PenSquare, Search, SlidersHorizontal } from "lucide-react"
+import { Search, SlidersHorizontal } from "lucide-react"
 import { Navbar } from "@/components/marketing/navbar"
 import { Footer } from "@/components/marketing/footer"
 import { BookCoverCard } from "@/components/marketing/book-cover-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
 import { getPublishedBooks } from "@/lib/actions/books"
 import { CATEGORIES } from "@/lib/utils"
 import { ExploreFilters } from "@/components/explore/explore-filters"
-import { getCurrentUser } from "@/lib/auth"
+import { getDictionary, getLocaleContext } from "@/lib/i18n"
+import { formatMessage, getCategoryLabel, type AppLocale, type Dictionary } from "@/lib/i18n-data"
 
 export const runtime = "edge"
 
@@ -30,10 +29,14 @@ async function BookGrid({
   search,
   category,
   sort,
+  locale,
+  messages,
 }: {
   search?: string
   category?: string
   sort?: string
+  locale: AppLocale
+  messages: Dictionary
 }) {
   let books = []
 
@@ -50,11 +53,10 @@ async function BookGrid({
           <SlidersHorizontal className="h-7 w-7 text-ink-muted" />
         </div>
         <h3 className="font-serif text-xl font-semibold text-ink mb-2">
-          Library temporarily unavailable
+          {messages.explore.unavailableTitle}
         </h3>
         <p className="text-ink-muted text-sm max-w-md">
-          The public catalog could not be loaded right now. Check the backend URL
-          env in Cloudflare and try again.
+          {messages.explore.unavailableDescription}
         </p>
       </div>
     )
@@ -66,11 +68,11 @@ async function BookGrid({
         <div className="h-16 w-16 rounded-full bg-cream-200 flex items-center justify-center mb-4">
           <Search className="h-7 w-7 text-ink-muted" />
         </div>
-        <h3 className="font-serif text-xl font-semibold text-ink mb-2">No books found</h3>
+        <h3 className="font-serif text-xl font-semibold text-ink mb-2">{messages.explore.emptyTitle}</h3>
         <p className="text-ink-muted text-sm">
           {search
-            ? `No results for "${search}". Try a different search term.`
-            : "Be the first to publish in this category."}
+            ? formatMessage(messages.explore.emptySearch, { search })
+            : messages.explore.emptyCategory}
         </p>
       </div>
     )
@@ -79,7 +81,7 @@ async function BookGrid({
   return (
     <>
       {books.map((book) => (
-        <BookCoverCard key={book.id} book={book} />
+        <BookCoverCard key={book.id} book={book} locale={locale} copy={messages.bookCard} />
       ))}
     </>
   )
@@ -88,7 +90,10 @@ async function BookGrid({
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const params = await searchParams
   const { q, category, sort } = params
-  const currentUser = await getCurrentUser()
+  const [messages, { locale }] = await Promise.all([getDictionary(), getLocaleContext()])
+  const categoryLabels = Object.fromEntries(
+    CATEGORIES.map((value) => [value, getCategoryLabel(locale, value) ?? value])
+  )
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -97,35 +102,11 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       <main id="main-content" className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-10">
-          <nav aria-label="Explore page navigation" className="mb-5 flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/">
-                <Home className="h-3.5 w-3.5" />
-                Home
-              </Link>
-            </Button>
-            {currentUser && (
-              <>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/dashboard">
-                    <LayoutDashboard className="h-3.5 w-3.5" />
-                    Dashboard
-                  </Link>
-                </Button>
-                <Button asChild variant="ghost" size="sm">
-                  <Link href="/create">
-                    <PenSquare className="h-3.5 w-3.5" />
-                    Create
-                  </Link>
-                </Button>
-              </>
-            )}
-          </nav>
           <h1 className="font-serif text-4xl font-bold text-forest mb-3">
-            Explore the Library
+            {messages.explore.title}
           </h1>
           <p className="text-ink-light max-w-xl">
-            Discover books published by writers around the world.
+            {messages.explore.description}
           </p>
         </div>
 
@@ -135,6 +116,8 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           currentCategory={category}
           currentSort={sort}
           categories={CATEGORIES}
+          categoryLabels={categoryLabels}
+          copy={messages.explore.filters}
         />
 
         {/* Results */}
@@ -148,7 +131,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
               </div>
             ))}
           >
-            <BookGrid search={q} category={category} sort={sort} />
+            <BookGrid search={q} category={category} sort={sort} locale={locale} messages={messages} />
           </Suspense>
         </div>
       </main>

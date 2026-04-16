@@ -9,13 +9,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { createBook } from "@/lib/actions/books"
-import { CATEGORIES, resolvePublicAssetUrl } from "@/lib/utils"
+import { resolvePublicAssetUrl } from "@/lib/utils"
+import { type Dictionary } from "@/lib/i18n-data"
 
 interface CreateBookFormProps {
   defaultAuthorName?: string
+  categories: { value: string; label: string }[]
+  copy: Dictionary["create"]["form"]
 }
 
-export function CreateBookForm({ defaultAuthorName = "" }: CreateBookFormProps) {
+export function CreateBookForm({
+  defaultAuthorName = "",
+  categories,
+  copy,
+}: CreateBookFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
@@ -28,7 +35,7 @@ export function CreateBookForm({ defaultAuthorName = "" }: CreateBookFormProps) 
     if (!file) return
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Cover image must be under 5MB")
+      toast.error(copy.coverTooLarge)
       return
     }
 
@@ -46,7 +53,7 @@ export function CreateBookForm({ defaultAuthorName = "" }: CreateBookFormProps) 
       setCoverPath(publicUrl)
       setCoverPreview(publicUrl)
     } else {
-      toast.error("Failed to upload cover image")
+      toast.error(copy.coverUploadFailed)
     }
   }
 
@@ -60,8 +67,8 @@ export function CreateBookForm({ defaultAuthorName = "" }: CreateBookFormProps) 
     const authorName = formData.get("authorName") as string
     const newErrors: Record<string, string> = {}
 
-    if (!title?.trim()) newErrors.title = "Title is required"
-    if (!authorName?.trim()) newErrors.authorName = "Author name is required"
+    if (!title?.trim()) newErrors.title = copy.titleRequired
+    if (!authorName?.trim()) newErrors.authorName = copy.authorRequired
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -72,7 +79,7 @@ export function CreateBookForm({ defaultAuthorName = "" }: CreateBookFormProps) 
     startTransition(async () => {
       const result = await createBook(formData)
       if (result.success) {
-        toast.success("Book created! Opening editor…")
+        toast.success(copy.createdSuccess)
         router.push(`/edit/${result.data.bookId}`)
       } else {
         toast.error(result.error)
@@ -84,12 +91,12 @@ export function CreateBookForm({ defaultAuthorName = "" }: CreateBookFormProps) 
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Cover image */}
       <div>
-        <p className="text-sm font-medium text-ink mb-2">Cover Image <span className="text-ink-faint">(optional)</span></p>
+        <p className="text-sm font-medium text-ink mb-2">{copy.coverImage} <span className="text-ink-faint">{copy.optional}</span></p>
         <div className="flex items-start gap-4">
           <div className="relative w-24 h-32 rounded-lg overflow-hidden border border-border bg-cream-200 flex items-center justify-center flex-shrink-0">
             {coverPreview ? (
               <>
-                <img src={coverPreview} alt="Cover" className="h-full w-full object-cover" />
+                <img src={coverPreview} alt={copy.coverAlt} className="h-full w-full object-cover" />
                 <button
                   type="button"
                   onClick={() => { setCoverPreview(null); setCoverPath("") }}
@@ -106,7 +113,7 @@ export function CreateBookForm({ defaultAuthorName = "" }: CreateBookFormProps) 
             <label className="block cursor-pointer">
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-border hover:border-gold hover:bg-gold/5 transition-colors text-sm text-ink-muted">
                 <Upload className="h-4 w-4" />
-                {uploading ? "Uploading…" : "Upload cover image"}
+                {uploading ? copy.uploading : copy.uploadCover}
               </div>
               <input
                 type="file"
@@ -116,29 +123,29 @@ export function CreateBookForm({ defaultAuthorName = "" }: CreateBookFormProps) 
                 disabled={uploading}
               />
             </label>
-            <p className="text-xs text-ink-faint mt-1.5">JPG, PNG, or WebP. Max 5MB. Ideal ratio: 3:4.</p>
+            <p className="text-xs text-ink-faint mt-1.5">{copy.coverHint}</p>
           </div>
         </div>
       </div>
 
       <Input
         name="title"
-        label="Book Title"
-        placeholder="The Great Journey"
+        label={copy.titleLabel}
+        placeholder={copy.titlePlaceholder}
         error={errors.title}
         required
       />
 
       <Input
         name="subtitle"
-        label="Subtitle"
-        placeholder="A story about adventure and discovery (optional)"
+        label={copy.subtitleLabel}
+        placeholder={copy.subtitlePlaceholder}
       />
 
       <Input
         name="authorName"
-        label="Author Name"
-        placeholder="Your name or pen name"
+        label={copy.authorLabel}
+        placeholder={copy.authorPlaceholder}
         defaultValue={defaultAuthorName}
         error={errors.authorName}
         required
@@ -146,20 +153,20 @@ export function CreateBookForm({ defaultAuthorName = "" }: CreateBookFormProps) 
 
       <Textarea
         name="description"
-        label="Description"
-        placeholder="What is this book about? (optional)"
+        label={copy.descriptionLabel}
+        placeholder={copy.descriptionPlaceholder}
         className="h-24 resize-none"
       />
 
       <div>
-        <p className="text-sm font-medium text-ink mb-1.5">Category</p>
+        <p className="text-sm font-medium text-ink mb-1.5">{copy.categoryLabel}</p>
         <Select name="category">
           <SelectTrigger>
-            <SelectValue placeholder="Choose a category (optional)" />
+            <SelectValue placeholder={copy.categoryPlaceholder} />
           </SelectTrigger>
           <SelectContent>
-            {CATEGORIES.map((cat) => (
-              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category.value} value={category.value}>{category.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -171,7 +178,7 @@ export function CreateBookForm({ defaultAuthorName = "" }: CreateBookFormProps) 
         size="lg"
         loading={isPending}
       >
-        Create Book & Open Editor
+        {copy.submit}
       </Button>
     </form>
   )

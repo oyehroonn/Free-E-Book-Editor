@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { requireCurrentUser } from "@/lib/auth"
 import { getMyBooks } from "@/lib/actions/books"
+import { getDictionary, getLocaleContext } from "@/lib/i18n"
+import { getRoleLabel } from "@/lib/i18n-data"
 
 export const runtime = "edge"
 
@@ -16,7 +18,11 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const currentUser = await requireCurrentUser("/dashboard")
-  const books = await getMyBooks()
+  const [books, messages, { locale }] = await Promise.all([
+    getMyBooks(),
+    getDictionary(),
+    getLocaleContext(),
+  ])
 
   return (
     <div className="min-h-screen flex flex-col bg-cream">
@@ -27,24 +33,23 @@ export default async function DashboardPage() {
           <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 sm:px-6 lg:px-8 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge variant="gold">Creator Dashboard</Badge>
+                <Badge variant="gold">{messages.dashboard.creatorBadge}</Badge>
                 <Badge variant={currentUser.role === "admin" ? "gold" : "cream"}>
-                  {currentUser.role}
+                  {getRoleLabel(locale, currentUser.role)}
                 </Badge>
               </div>
               <h1 className="font-serif text-4xl font-bold text-forest">
-                {currentUser.username}&apos;s flipbooks
+                {messages.dashboard.title}
               </h1>
               <p className="mt-3 max-w-2xl text-ink-muted">
-                Drafts stay private to you until you publish them. Once a flipbook is public,
-                it goes live in Explore and the featured section and can be shared by link.
+                {messages.dashboard.description}
               </p>
             </div>
 
             <Button asChild size="lg">
               <Link href="/create">
                 <Sparkles className="h-4 w-4" />
-                Create New Flipbook
+                {messages.dashboard.createButton}
               </Link>
             </Button>
           </div>
@@ -57,15 +62,14 @@ export default async function DashboardPage() {
                 <BookOpen className="h-6 w-6 text-forest" />
               </div>
               <h2 className="mt-5 font-serif text-3xl font-semibold text-ink">
-                No flipbooks yet
+                {messages.dashboard.emptyTitle}
               </h2>
               <p className="mx-auto mt-3 max-w-md text-ink-muted">
-                Start your first draft, edit it in the ebook editor, and publish it only when
-                you are ready for it to show up to everyone else.
+                {messages.dashboard.emptyDescription}
               </p>
               <Button asChild size="lg" className="mt-8">
                 <Link href="/create">
-                  Create Your First Flipbook
+                  {messages.dashboard.emptyButton}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
@@ -73,7 +77,7 @@ export default async function DashboardPage() {
           ) : (
             <div className="space-y-5">
               {books.map((book) => (
-                <DashboardBookCard key={book.id} book={book} />
+                <DashboardBookCard key={book.id} book={book} locale={locale} copy={messages.dashboard.card} />
               ))}
             </div>
           )}

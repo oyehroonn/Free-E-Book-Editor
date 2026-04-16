@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Inter, Playfair_Display } from "next/font/google"
 import { Toaster } from "sonner"
+import { getDictionary } from "@/lib/i18n"
 import "./globals.css"
 
 export const runtime = "edge"
@@ -32,14 +33,16 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const messages = await getDictionary()
+
   return (
     <html
-      lang="en"
+      lang={messages.meta.htmlLang}
       className={`${inter.variable} ${playfair.variable}`}
       suppressHydrationWarning
     >

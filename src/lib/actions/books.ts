@@ -1,9 +1,8 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
-import { booksDb, pagesDb, blocksDb } from "@/lib/db"
-import { generateId, makeUniqueSlug } from "@/lib/utils"
-import type { Book, ActionResult, BookWithPages } from "@/types"
+import { backendFetch, BackendApiError } from "@/lib/backend-api"
+import { resolvePublicAssetUrl } from "@/lib/utils"
+import type { Book, ActionResult, Block, BlockData, BookWithPages, PageWithBlocks } from "@/types"
 import { z } from "zod"
 
 const CreateBookSchema = z.object({
@@ -19,6 +18,49 @@ const CreateBookSchema = z.object({
 const UpdateBookSchema = CreateBookSchema.extend({
   status: z.enum(["draft", "published"]).optional(),
 })
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Request failed"
+}
+
+function normalizeBlockData(data: BlockData): BlockData {
+  if (data.type !== "IMAGE") {
+    return data
+  }
+
+  return {
+    ...data,
+    url: resolvePublicAssetUrl(data.url) ?? data.url,
+  }
+}
+
+function normalizeBlock(block: Block): Block {
+  return {
+    ...block,
+    data: normalizeBlockData(block.data),
+  }
+}
+
+function normalizePage(page: PageWithBlocks): PageWithBlocks {
+  return {
+    ...page,
+    blocks: page.blocks.map(normalizeBlock),
+  }
+}
+
+function normalizeBook<T extends Book>(book: T): T {
+  return {
+    ...book,
+    coverImage: resolvePublicAssetUrl(book.coverImage) ?? book.coverImage,
+  }
+}
+
+function normalizeBookWithPages(book: BookWithPages): BookWithPages {
+  return {
+    ...normalizeBook(book),
+    pages: book.pages.map(normalizePage),
+  }
+}
 
 export async function createBook(
   formData: FormData
@@ -38,38 +80,26 @@ export async function createBook(
     return { success: false, error: parsed.error.errors[0].message }
   }
 
-  const allSlugs = booksDb.findAll().map((b) => b.slug)
-  const slug = makeUniqueSlug(parsed.data.title, allSlugs)
-  const now = new Date().toISOString()
+  try {
+    const data = await backendFetch<{ bookId: string; slug: string }>("/books", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...parsed.data,
+        tags: parsed.data.tags?.filter(Boolean) ?? [],
+      }),
+    })
 
-  const book: Book = {
-    id: generateId(),
-    title: parsed.data.title,
-    subtitle: parsed.data.subtitle,
-    description: parsed.data.description,
-    slug,
-    coverImage: parsed.data.coverImage,
-    authorName: parsed.data.authorName,
-    status: "draft",
-    viewCount: 0,
-    tags: parsed.data.tags?.filter(Boolean) ?? [],
-    category: parsed.data.category,
-    createdAt: now,
-    updatedAt: now,
+    return { success: true, data }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
   }
-
-  booksDb.create(book)
-  revalidatePath("/explore")
-  return { success: true, data: { bookId: book.id, slug: book.slug } }
 }
 
 export async function updateBook(
   bookId: string,
   formData: FormData
 ): Promise<ActionResult<Book>> {
-  const existing = booksDb.findById(bookId)
-  if (!existing) return { success: false, error: "Book not found" }
-
   const raw = {
     title: formData.get("title") as string,
     subtitle: (formData.get("subtitle") as string) || undefined,
@@ -86,99 +116,92 @@ export async function updateBook(
     return { success: false, error: parsed.error.errors[0].message }
   }
 
-  const updates: Partial<Book> = {
-    title: parsed.data.title,
-    subtitle: parsed.data.subtitle,
-    description: parsed.data.description,
-    authorName: parsed.data.authorName,
-    coverImage: parsed.data.coverImage,
-    category: parsed.data.category,
-    tags: parsed.data.tags?.filter(Boolean) ?? [],
-    status: parsed.data.status,
+  try {
+    const data = await backendFetch<Book>(`/books/${bookId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...parsed.data,
+        tags: parsed.data.tags?.filter(Boolean) ?? [],
+      }),
+    })
+
+    return { success: true, data: normalizeBook(data) }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
   }
-
-  if (parsed.data.status === "published" && !existing.publishedAt) {
-    updates.publishedAt = new Date().toISOString()
-  }
-
-  const updated = booksDb.update(bookId, updates)
-  if (!updated) return { success: false, error: "Failed to update book" }
-
-  revalidatePath(`/edit/${bookId}`)
-  revalidatePath(`/read/${updated.slug}`)
-  revalidatePath("/explore")
-  return { success: true, data: updated }
 }
 
 export async function publishBook(bookId: string): Promise<ActionResult<Book>> {
-  const existing = booksDb.findById(bookId)
-  if (!existing) return { success: false, error: "Book not found" }
+  try {
+    const data = await backendFetch<Book>(`/books/${bookId}/publish`, {
+      method: "POST",
+    })
 
-  const updated = booksDb.update(bookId, {
-    status: "published",
-    publishedAt: existing.publishedAt ?? new Date().toISOString(),
-  })
-  if (!updated) return { success: false, error: "Failed to publish book" }
-
-  revalidatePath(`/edit/${bookId}`)
-  revalidatePath(`/read/${updated.slug}`)
-  revalidatePath("/explore")
-  return { success: true, data: updated }
+    return { success: true, data: normalizeBook(data) }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
 }
 
 export async function unpublishBook(bookId: string): Promise<ActionResult<Book>> {
-  const updated = booksDb.update(bookId, { status: "draft" })
-  if (!updated) return { success: false, error: "Book not found" }
+  try {
+    const data = await backendFetch<Book>(`/books/${bookId}/unpublish`, {
+      method: "POST",
+    })
 
-  revalidatePath(`/edit/${bookId}`)
-  revalidatePath("/explore")
-  return { success: true, data: updated }
+    return { success: true, data: normalizeBook(data) }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
 }
 
 export async function deleteBook(bookId: string): Promise<ActionResult> {
-  // Cascade delete pages and blocks
-  blocksDb.deleteByBookId(bookId)
-  pagesDb.deleteByBookId(bookId)
-  const deleted = booksDb.delete(bookId)
-  if (!deleted) return { success: false, error: "Book not found" }
+  try {
+    await backendFetch<{ deleted: boolean }>(`/books/${bookId}`, {
+      method: "DELETE",
+    })
 
-  revalidatePath("/explore")
-  revalidatePath("/")
-  return { success: true, data: undefined }
+    return { success: true, data: undefined }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
 }
 
 export async function getBookWithPages(
   bookId: string
 ): Promise<BookWithPages | null> {
-  const book = booksDb.findById(bookId)
-  if (!book) return null
-
-  const pages = pagesDb.findByBookId(bookId)
-  const pagesWithBlocks = pages.map((page) => ({
-    ...page,
-    blocks: blocksDb.findByPageId(page.id),
-  }))
-
-  return { ...book, pages: pagesWithBlocks }
+  try {
+    const book = await backendFetch<BookWithPages>(`/books/${bookId}`)
+    return normalizeBookWithPages(book)
+  } catch (error) {
+    if (error instanceof BackendApiError && error.status === 404) {
+      return null
+    }
+    throw error
+  }
 }
 
 export async function getBookBySlug(
   slug: string
 ): Promise<BookWithPages | null> {
-  const book = booksDb.findBySlug(slug)
-  if (!book) return null
-
-  const pages = pagesDb.findByBookId(book.id)
-  const pagesWithBlocks = pages.map((page) => ({
-    ...page,
-    blocks: blocksDb.findByPageId(page.id),
-  }))
-
-  return { ...book, pages: pagesWithBlocks }
+  try {
+    const book = await backendFetch<BookWithPages>(
+      `/books/by-slug/${encodeURIComponent(slug)}`
+    )
+    return normalizeBookWithPages(book)
+  } catch (error) {
+    if (error instanceof BackendApiError && error.status === 404) {
+      return null
+    }
+    throw error
+  }
 }
 
 export async function incrementBookViews(bookId: string): Promise<void> {
-  booksDb.incrementViews(bookId)
+  await backendFetch<{ viewCount: number }>(`/books/${bookId}/views`, {
+    method: "POST",
+  })
 }
 
 export async function getPublishedBooks(opts?: {
@@ -187,34 +210,14 @@ export async function getPublishedBooks(opts?: {
   sort?: "newest" | "popular"
   limit?: number
 }) {
-  let books = booksDb.findPublished()
+  const params = new URLSearchParams()
 
-  if (opts?.search) {
-    const q = opts.search.toLowerCase()
-    books = books.filter(
-      (b) =>
-        b.title.toLowerCase().includes(q) ||
-        b.authorName.toLowerCase().includes(q) ||
-        b.description?.toLowerCase().includes(q)
-    )
-  }
+  if (opts?.search) params.set("search", opts.search)
+  if (opts?.category) params.set("category", opts.category)
+  if (opts?.sort) params.set("sort", opts.sort)
+  if (typeof opts?.limit === "number") params.set("limit", String(opts.limit))
 
-  if (opts?.category && opts.category !== "all") {
-    books = books.filter((b) => b.category === opts.category)
-  }
-
-  if (opts?.sort === "popular") {
-    books = books.sort((a, b) => b.viewCount - a.viewCount)
-  } else {
-    books = books.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-  }
-
-  if (opts?.limit) {
-    books = books.slice(0, opts.limit)
-  }
-
-  return books
+  const suffix = params.toString() ? `?${params.toString()}` : ""
+  const books = await backendFetch<Book[]>(`/books/published${suffix}`)
+  return books.map(normalizeBook)
 }

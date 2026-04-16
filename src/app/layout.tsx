@@ -3,6 +3,8 @@ import { Inter, Playfair_Display } from "next/font/google"
 import { Toaster } from "sonner"
 import "./globals.css"
 
+export const runtime = "edge"
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -26,7 +28,6 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
     siteName: "Folio",
   },
 }

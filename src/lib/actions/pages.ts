@@ -1,124 +1,85 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
-import { pagesDb, blocksDb } from "@/lib/db"
-import { generateId } from "@/lib/utils"
+import { backendFetch } from "@/lib/backend-api"
 import type { Page, ActionResult, PageWithBlocks } from "@/types"
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Request failed"
+}
 
 export async function addPage(
   bookId: string,
   afterPageNumber?: number
 ): Promise<ActionResult<Page>> {
-  const existing = pagesDb.findByBookId(bookId)
+  try {
+    const data = await backendFetch<Page>("/pages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId, afterPageNumber }),
+    })
 
-  let pageNumber: number
-  if (afterPageNumber !== undefined) {
-    // Shift pages after insertion point
-    const all = pagesDb.findAll()
-    for (const p of all) {
-      if (p.bookId === bookId && p.pageNumber > afterPageNumber) {
-        pagesDb.update(p.id, { pageNumber: p.pageNumber + 1 })
-      }
-    }
-    pageNumber = afterPageNumber + 1
-  } else {
-    pageNumber = existing.length + 1
+    return { success: true, data }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
   }
-
-  const now = new Date().toISOString()
-  const page: Page = {
-    id: generateId(),
-    bookId,
-    pageNumber,
-    createdAt: now,
-    updatedAt: now,
-  }
-
-  pagesDb.create(page)
-  revalidatePath(`/edit/${bookId}`)
-  return { success: true, data: page }
 }
 
 export async function duplicatePage(
   pageId: string
 ): Promise<ActionResult<PageWithBlocks>> {
-  const original = pagesDb.findById(pageId)
-  if (!original) return { success: false, error: "Page not found" }
+  try {
+    const data = await backendFetch<PageWithBlocks>(`/pages/${pageId}/duplicate`, {
+      method: "POST",
+    })
 
-  // Shift pages after this one
-  const allPages = pagesDb.findByBookId(original.bookId)
-  for (const p of allPages) {
-    if (p.pageNumber > original.pageNumber) {
-      pagesDb.update(p.id, { pageNumber: p.pageNumber + 1 })
-    }
+    return { success: true, data }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
   }
-
-  const now = new Date().toISOString()
-  const newPage: Page = {
-    id: generateId(),
-    bookId: original.bookId,
-    pageNumber: original.pageNumber + 1,
-    title: original.title ? `${original.title} (copy)` : undefined,
-    createdAt: now,
-    updatedAt: now,
-  }
-  pagesDb.create(newPage)
-
-  // Duplicate blocks
-  const originalBlocks = blocksDb.findByPageId(pageId)
-  const newBlocks = originalBlocks.map((b) => ({
-    ...b,
-    id: generateId(),
-    pageId: newPage.id,
-    createdAt: now,
-    updatedAt: now,
-  }))
-  for (const block of newBlocks) {
-    blocksDb.create(block)
-  }
-
-  revalidatePath(`/edit/${original.bookId}`)
-  return { success: true, data: { ...newPage, blocks: newBlocks } }
 }
 
 export async function deletePage(pageId: string): Promise<ActionResult> {
-  const page = pagesDb.findById(pageId)
-  if (!page) return { success: false, error: "Page not found" }
-
-  const bookId = page.bookId
-  const deletedPageNumber = page.pageNumber
-
-  blocksDb.deleteByPageId(pageId)
-  pagesDb.delete(pageId)
-
-  // Renumber remaining pages
-  const remaining = pagesDb.findByBookId(bookId)
-  remaining
-    .filter((p) => p.pageNumber > deletedPageNumber)
-    .forEach((p) => {
-      pagesDb.update(p.id, { pageNumber: p.pageNumber - 1 })
+  try {
+    await backendFetch<{ bookId: string }>(`/pages/${pageId}`, {
+      method: "DELETE",
     })
 
-  revalidatePath(`/edit/${bookId}`)
-  return { success: true, data: undefined }
+    return { success: true, data: undefined }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
 }
 
 export async function reorderPages(
   bookId: string,
   orderedPageIds: string[]
 ): Promise<ActionResult> {
-  pagesDb.reorderPages(bookId, orderedPageIds)
-  revalidatePath(`/edit/${bookId}`)
-  return { success: true, data: undefined }
+  try {
+    await backendFetch<{ bookId: string }>("/pages/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId, orderedPageIds }),
+    })
+
+    return { success: true, data: undefined }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
 }
 
 export async function updatePageTitle(
   pageId: string,
   title: string
 ): Promise<ActionResult<Page>> {
-  const updated = pagesDb.update(pageId, { title })
-  if (!updated) return { success: false, error: "Page not found" }
+  try {
+    const data = await backendFetch<Page>(`/pages/${pageId}/title`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    })
 
-  revalidatePath(`/edit/${updated.bookId}`)
-  return { success: true, data: updated }
+    return { success: true, data }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
 }

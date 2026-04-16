@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, BookOpen, Home, Search, Sparkles } from "lucide-react"
+import { ArrowRight, BookOpen, Sparkles } from "lucide-react"
 import { Navbar } from "@/components/marketing/navbar"
 import { Footer } from "@/components/marketing/footer"
 import { DashboardBookCard } from "@/components/dashboard/dashboard-book-card"
@@ -41,26 +41,12 @@ export default async function DashboardPage() {
               </p>
             </div>
 
-            <nav aria-label="Dashboard shortcuts" className="flex flex-wrap gap-2">
-              <Button asChild variant="outline" size="lg">
-                <Link href="/">
-                  <Home className="h-4 w-4" />
-                  Home
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/explore">
-                  <Search className="h-4 w-4" />
-                  Explore
-                </Link>
-              </Button>
-              <Button asChild size="lg">
-                <Link href="/create">
-                  <Sparkles className="h-4 w-4" />
-                  Create New Flipbook
-                </Link>
-              </Button>
-            </nav>
+            <Button asChild size="lg">
+              <Link href="/create">
+                <Sparkles className="h-4 w-4" />
+                Create New Flipbook
+              </Link>
+            </Button>
           </div>
         </section>
 
@@ -77,26 +63,12 @@ export default async function DashboardPage() {
                 Start your first draft, edit it in the ebook editor, and publish it only when
                 you are ready for it to show up to everyone else.
               </p>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/">
-                    <Home className="h-4 w-4" />
-                    Back Home
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/explore">
-                    <Search className="h-4 w-4" />
-                    Browse Explore
-                  </Link>
-                </Button>
-                <Button asChild size="lg">
-                  <Link href="/create">
-                    Create Your First Flipbook
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
+              <Button asChild size="lg" className="mt-8">
+                <Link href="/create">
+                  Create Your First Flipbook
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
             </div>
           ) : (
             <div className="space-y-5">

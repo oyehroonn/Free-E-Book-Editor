@@ -17,6 +17,7 @@ export const metadata = {
 export default async function DashboardPage() {
   const currentUser = await requireCurrentUser("/dashboard")
   const books = await getMyBooks()
+  const accountName = currentUser.displayName ?? currentUser.username
 
   return (
     <div className="min-h-screen flex flex-col bg-cream">
@@ -33,20 +34,23 @@ export default async function DashboardPage() {
                 </Badge>
               </div>
               <h1 className="font-serif text-4xl font-bold text-forest">
-                {currentUser.username}&apos;s flipbooks
+                {accountName}&apos;s flipbooks
               </h1>
               <p className="mt-3 max-w-2xl text-ink-muted">
                 Drafts stay private to you until you publish them. Once a flipbook is public,
                 it goes live in Explore and the featured section and can be shared by link.
+                Account and developer controls now live under Settings.
               </p>
             </div>
 
-            <Button asChild size="lg">
-              <Link href="/create">
-                <Sparkles className="h-4 w-4" />
-                Create New Flipbook
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild size="lg">
+                <Link href="/create">
+                  <Sparkles className="h-4 w-4" />
+                  Create New Flipbook
+                </Link>
+              </Button>
+            </div>
           </div>
         </section>
 
@@ -63,12 +67,14 @@ export default async function DashboardPage() {
                 Start your first draft, edit it in the ebook editor, and publish it only when
                 you are ready for it to show up to everyone else.
               </p>
-              <Button asChild size="lg" className="mt-8">
-                <Link href="/create">
-                  Create Your First Flipbook
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <Button asChild size="lg">
+                  <Link href="/create">
+                    Create Your First Flipbook
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-5">

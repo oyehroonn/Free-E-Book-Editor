@@ -1,15 +1,12 @@
-import Link from "next/link"
 import { Suspense } from "react"
-import { Home, LayoutDashboard, PenSquare, Search, SlidersHorizontal } from "lucide-react"
+import { Search, SlidersHorizontal } from "lucide-react"
 import { Navbar } from "@/components/marketing/navbar"
 import { Footer } from "@/components/marketing/footer"
 import { BookCoverCard } from "@/components/marketing/book-cover-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
 import { getPublishedBooks } from "@/lib/actions/books"
 import { CATEGORIES } from "@/lib/utils"
 import { ExploreFilters } from "@/components/explore/explore-filters"
-import { getCurrentUser } from "@/lib/auth"
 
 export const runtime = "edge"
 
@@ -88,7 +85,6 @@ async function BookGrid({
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const params = await searchParams
   const { q, category, sort } = params
-  const currentUser = await getCurrentUser()
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -97,30 +93,6 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       <main id="main-content" className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-10">
-          <nav aria-label="Explore page navigation" className="mb-5 flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/">
-                <Home className="h-3.5 w-3.5" />
-                Home
-              </Link>
-            </Button>
-            {currentUser && (
-              <>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/dashboard">
-                    <LayoutDashboard className="h-3.5 w-3.5" />
-                    Dashboard
-                  </Link>
-                </Button>
-                <Button asChild variant="ghost" size="sm">
-                  <Link href="/create">
-                    <PenSquare className="h-3.5 w-3.5" />
-                    Create
-                  </Link>
-                </Button>
-              </>
-            )}
-          </nav>
           <h1 className="font-serif text-4xl font-bold text-forest mb-3">
             Explore the Library
           </h1>

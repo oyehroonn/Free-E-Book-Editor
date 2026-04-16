@@ -31,8 +31,10 @@ PAGES_CSV_PATH = DATA_DIR / "pages.csv"
 BLOCKS_CSV_PATH = DATA_DIR / "blocks.csv"
 USERS_CSV_PATH = DATA_DIR / "users.csv"
 SESSIONS_CSV_PATH = DATA_DIR / "sessions.csv"
+API_KEYS_CSV_PATH = DATA_DIR / "api_keys.csv"
 
 SESSION_HEADER_NAME = "x-session-token"
+API_KEY_HEADER_NAME = "x-api-key"
 
 BOOK_COLUMNS = [
     "id",
@@ -69,6 +71,18 @@ SESSION_COLUMNS = [
     "updatedAt",
 ]
 
+API_KEY_COLUMNS = [
+    "id",
+    "userId",
+    "name",
+    "key",
+    "prefix",
+    "createdAt",
+    "updatedAt",
+    "lastUsedAt",
+    "revokedAt",
+]
+
 PAGE_COLUMNS = [
     "id",
     "bookId",
@@ -88,7 +102,7 @@ BLOCK_COLUMNS = [
     "updatedAt",
 ]
 
-DB_LOCK = threading.Lock()
+DB_LOCK = threading.RLock()
 
 app = FastAPI(title="Folio API", version="1.0.0")
 
@@ -111,6 +125,10 @@ class RegisterPayload(BaseModel):
 class LoginPayload(BaseModel):
     identifier: str = Field(min_length=1, max_length=120)
     password: str = Field(min_length=1, max_length=120)
+
+
+class CreateApiKeyPayload(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
 
 
 class CreateBookPayload(BaseModel):
@@ -185,6 +203,10 @@ def get_upload_public_base_url(request: Request) -> str:
 
 def generate_id() -> str:
     return str(uuid.uuid4())
+
+
+def generate_api_key_value() -> str:
+    return f"folio_{secrets.token_urlsafe(24)}"
 
 
 def slugify_title(value: str) -> str:
@@ -277,6 +299,9 @@ def ensure_storage() -> None:
     if not SESSIONS_CSV_PATH.exists():
         bootstrap_csv(SESSIONS_CSV_PATH, SESSION_COLUMNS, [])
 
+    if not API_KEYS_CSV_PATH.exists():
+        bootstrap_csv(API_KEYS_CSV_PATH, API_KEY_COLUMNS, [])
+
     if not PAGES_CSV_PATH.exists():
         json_rows = load_json(PAGES_JSON_PATH)
         page_rows = [
@@ -361,6 +386,15 @@ def read_sessions_df() -> pd.DataFrame:
     return dataframe[SESSION_COLUMNS]
 
 
+def read_api_keys_df() -> pd.DataFrame:
+    ensure_storage()
+    dataframe = pd.read_csv(API_KEYS_CSV_PATH, dtype=str, keep_default_na=False)
+    for column in API_KEY_COLUMNS:
+        if column not in dataframe.columns:
+            dataframe[column] = ""
+    return dataframe[API_KEY_COLUMNS]
+
+
 def write_books_df(dataframe: pd.DataFrame) -> None:
     write_csv(BOOKS_CSV_PATH, dataframe, BOOK_COLUMNS)
 
@@ -381,6 +415,10 @@ def write_sessions_df(dataframe: pd.DataFrame) -> None:
     write_csv(SESSIONS_CSV_PATH, dataframe, SESSION_COLUMNS)
 
 
+def write_api_keys_df(dataframe: pd.DataFrame) -> None:
+    write_csv(API_KEYS_CSV_PATH, dataframe, API_KEY_COLUMNS)
+
+
 def serialize_user(row: pd.Series) -> dict[str, Any]:
     return {
         "id": row["id"],
@@ -389,6 +427,22 @@ def serialize_user(row: pd.Series) -> dict[str, Any]:
         "role": row["role"] or "user",
         "createdAt": row["createdAt"],
         "updatedAt": row["updatedAt"],
+    }
+
+
+def serialize_api_key(row: pd.Series) -> dict[str, Any]:
+    prefix = row["prefix"] or row["key"][:12]
+    return {
+        "id": row["id"],
+        "userId": row["userId"],
+        "name": row["name"],
+        "prefix": prefix,
+        "preview": f"{prefix}..." if prefix else "",
+        "createdAt": row["createdAt"],
+        "updatedAt": row["updatedAt"],
+        "lastUsedAt": parse_optional(row["lastUsedAt"]),
+        "revokedAt": parse_optional(row["revokedAt"]),
+        "isRevoked": bool(row["revokedAt"]),
     }
 
 
@@ -501,6 +555,13 @@ def get_user_row_by_identifier(users_df: pd.DataFrame, identifier: str) -> pd.Se
     return matches.iloc[0]
 
 
+def get_api_key_row_by_id(api_keys_df: pd.DataFrame, key_id: str) -> pd.Series | None:
+    matches = api_keys_df[api_keys_df["id"] == key_id]
+    if matches.empty:
+        return None
+    return matches.iloc[0]
+
+
 def get_session_token_from_request(request: Request) -> str | None:
     token = request.headers.get(SESSION_HEADER_NAME) or request.cookies.get("folio_session")
     if token:
@@ -508,7 +569,19 @@ def get_session_token_from_request(request: Request) -> str | None:
     return None
 
 
-def get_current_user_row(request: Request) -> pd.Series | None:
+def get_api_key_from_request(request: Request) -> str | None:
+    header_value = request.headers.get(API_KEY_HEADER_NAME)
+    if header_value:
+        return header_value.strip()
+
+    authorization = request.headers.get("authorization", "")
+    if authorization.lower().startswith("bearer "):
+        return authorization.split(" ", 1)[1].strip()
+
+    return None
+
+
+def get_session_user_row(request: Request) -> pd.Series | None:
     session_token = get_session_token_from_request(request)
     if not session_token:
         return None
@@ -523,10 +596,48 @@ def get_current_user_row(request: Request) -> pd.Series | None:
     return get_user_row_by_id(users_df, session_row["userId"])
 
 
+def get_user_row_from_api_key(request: Request) -> pd.Series | None:
+    api_key_value = get_api_key_from_request(request)
+    if not api_key_value:
+        return None
+
+    with DB_LOCK:
+        users_df = read_users_df()
+        api_keys_df = read_api_keys_df()
+        matches = api_keys_df[
+            (api_keys_df["key"] == api_key_value) & (api_keys_df["revokedAt"] == "")
+        ]
+        if matches.empty:
+            return None
+
+        index = matches.index[0]
+        current_time = now_iso()
+        api_keys_df.loc[index, "lastUsedAt"] = current_time
+        api_keys_df.loc[index, "updatedAt"] = current_time
+        write_api_keys_df(api_keys_df)
+
+        api_key_row = api_keys_df.loc[index]
+        return get_user_row_by_id(users_df, api_key_row["userId"])
+
+
+def get_current_user_row(request: Request) -> pd.Series | None:
+    return get_session_user_row(request) or get_user_row_from_api_key(request)
+
+
+def require_session_user(request: Request) -> pd.Series:
+    user_row = get_session_user_row(request)
+    if user_row is None:
+        raise HTTPException(status_code=401, detail="Please sign in from the dashboard to continue")
+    return user_row
+
+
 def require_authenticated_user(request: Request) -> pd.Series:
     user_row = get_current_user_row(request)
     if user_row is None:
-        raise HTTPException(status_code=401, detail="Please sign in to continue")
+        raise HTTPException(
+            status_code=401,
+            detail="Please authenticate with a session or API key to continue",
+        )
     return user_row
 
 
@@ -712,6 +823,74 @@ def logout_user(request: Request) -> dict[str, bool]:
 def get_current_user(request: Request) -> dict[str, Any]:
     user_row = require_authenticated_user(request)
     return serialize_user(user_row)
+
+
+@app.get("/developer/api-keys", summary="List API keys for the signed-in user")
+def list_api_keys(request: Request) -> list[dict[str, Any]]:
+    current_user = require_session_user(request)
+    api_keys_df = read_api_keys_df()
+    mine = api_keys_df[api_keys_df["userId"] == current_user["id"]].copy()
+    mine = mine.sort_values(["revokedAt", "createdAt"], ascending=[True, False])
+    return [serialize_api_key(row) for _, row in mine.iterrows()]
+
+
+@app.post("/developer/api-keys", summary="Create an API key for the signed-in user")
+def create_api_key(request: Request, payload: CreateApiKeyPayload) -> dict[str, Any]:
+    current_user = require_session_user(request)
+    key_name = payload.name.strip()
+    if not key_name:
+        raise HTTPException(status_code=400, detail="API key name is required")
+
+    with DB_LOCK:
+        api_keys_df = read_api_keys_df()
+        current_time = now_iso()
+        generated_key = generate_api_key_value()
+        api_key_row = pd.DataFrame(
+            [
+                {
+                    "id": generate_id(),
+                    "userId": current_user["id"],
+                    "name": key_name,
+                    "key": generated_key,
+                    "prefix": generated_key[:16],
+                    "createdAt": current_time,
+                    "updatedAt": current_time,
+                    "lastUsedAt": "",
+                    "revokedAt": "",
+                }
+            ],
+            columns=API_KEY_COLUMNS,
+        )
+        api_keys_df = pd.concat([api_keys_df, api_key_row], ignore_index=True)
+        write_api_keys_df(api_keys_df)
+
+    created_key = api_key_row.iloc[0]
+    return {
+        "apiKey": serialize_api_key(created_key),
+        "generatedKey": generated_key,
+    }
+
+
+@app.delete("/developer/api-keys/{key_id}", summary="Revoke an API key for the signed-in user")
+def revoke_api_key(key_id: str, request: Request) -> dict[str, Any]:
+    current_user = require_session_user(request)
+
+    with DB_LOCK:
+        api_keys_df = read_api_keys_df()
+        api_key_row = get_api_key_row_by_id(api_keys_df, key_id)
+        if api_key_row is None:
+            raise HTTPException(status_code=404, detail="API key not found")
+        if api_key_row["userId"] != current_user["id"]:
+            raise HTTPException(status_code=403, detail="You do not have access to this API key")
+
+        index = api_keys_df[api_keys_df["id"] == key_id].index[0]
+        current_time = now_iso()
+        api_keys_df.loc[index, "revokedAt"] = current_time
+        api_keys_df.loc[index, "updatedAt"] = current_time
+        write_api_keys_df(api_keys_df)
+        updated_row = api_keys_df.loc[index]
+
+    return serialize_api_key(updated_row)
 
 
 @app.get("/books/published")

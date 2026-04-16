@@ -4,7 +4,7 @@ import { useState, useCallback, useOptimistic } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
-  BookOpen, Eye, Settings, ArrowLeft, Globe, Lock, Loader2, CheckCircle2, LayoutDashboard
+  BookOpen, Eye, Settings, ArrowLeft, Globe, Home, Lock, Loader2, CheckCircle2, LayoutDashboard
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -101,16 +101,19 @@ export function BookEditor({ initialBook }: BookEditorProps) {
   return (
     <div className="h-screen flex flex-col bg-cream overflow-hidden">
       {/* ─── Top Bar ──────────────────────────────────────────────────────────── */}
-      <header className="h-14 border-b border-border/60 bg-paper flex items-center justify-between px-4 flex-shrink-0 z-20 shadow-sm">
+      <header
+        aria-label="Editor navigation"
+        className="h-14 border-b border-border/60 bg-paper flex items-center justify-between px-4 flex-shrink-0 z-20 shadow-sm"
+      >
         <div className="flex items-center gap-3">
           <Link
-            href="/"
+            href="/dashboard"
+            aria-label="Back to dashboard"
             className="flex items-center gap-1.5 text-ink-muted hover:text-ink transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            <BookOpen className="h-4 w-4" />
-            <span className="font-serif text-sm font-semibold text-forest hidden sm:block">
-              Folio
+            <span className="text-xs font-medium uppercase tracking-wide hidden sm:block">
+              Back
             </span>
           </Link>
 
@@ -139,6 +142,13 @@ export function BookEditor({ initialBook }: BookEditorProps) {
           </div>
 
           <div className="h-5 w-px bg-border" />
+
+          <Button asChild variant="outline" size="sm">
+            <Link href="/">
+              <Home className="h-3.5 w-3.5" />
+              <span className="hidden sm:block">Home</span>
+            </Link>
+          </Button>
 
           <Button asChild variant="outline" size="sm">
             <Link href="/dashboard">
@@ -202,7 +212,7 @@ export function BookEditor({ initialBook }: BookEditorProps) {
         />
 
         {/* Canvas */}
-        <main className="flex-1 overflow-auto">
+        <main id="main-content" className="flex-1 overflow-auto">
           {activePage ? (
             <PageCanvas
               page={activePage}

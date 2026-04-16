@@ -2,31 +2,40 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BookOpen, LogIn, LogOut, Menu, PenSquare, UserPlus, X } from "lucide-react"
+import { BookOpen, Home, LogIn, LogOut, Menu, PenSquare, Search, Settings, UserPlus, X } from "lucide-react"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
+import { UserAvatar } from "@/components/profile/user-avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { logoutUser } from "@/lib/actions/auth"
+import type { Dictionary } from "@/lib/i18n-data"
 import type { User } from "@/types"
 
 interface NavbarClientProps {
   currentUser: User | null
+  copy: Dictionary["navbar"]
+  roleLabels: Dictionary["roles"]
 }
 
-export function NavbarClient({ currentUser }: NavbarClientProps) {
+export function NavbarClient({ currentUser, copy, roleLabels }: NavbarClientProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const accountName = currentUser ? currentUser.displayName ?? currentUser.username : ""
 
   const navLinks = currentUser
     ? [
-        { href: "/explore", label: "Explore" },
-        { href: "/dashboard", label: "Dashboard" },
+        { href: "/", label: copy.home, icon: Home },
+        { href: "/explore", label: copy.explore, icon: Search },
+        { href: "/dashboard", label: copy.dashboard, icon: BookOpen },
       ]
-    : [{ href: "/explore", label: "Explore" }]
+    : [
+        { href: "/", label: copy.home, icon: Home },
+        { href: "/explore", label: copy.explore, icon: Search },
+      ]
 
   function handleLogout() {
     startTransition(async () => {
@@ -36,7 +45,7 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
         return
       }
 
-      toast.success("Signed out")
+      toast.success(copy.signedOut)
       router.refresh()
       setMobileOpen(false)
     })
@@ -55,18 +64,20 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav aria-label="Primary navigation" className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={pathname === link.href ? "page" : undefined}
                 className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                  "inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
                   pathname === link.href
                     ? "text-forest bg-forest/8"
                     : "text-ink-light hover:text-ink hover:bg-cream-200"
                 )}
               >
+                <link.icon className="h-4 w-4" />
                 {link.label}
               </Link>
             ))}
@@ -75,24 +86,34 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
           <div className="hidden md:flex items-center gap-3">
             {currentUser ? (
               <>
+                <Button asChild variant="ghost" size="icon-sm" className="rounded-full">
+                  <Link href="/settings" aria-label={copy.settings}>
+                    <Settings className="h-4 w-4" />
+                  </Link>
+                </Button>
                 <div className="flex items-center gap-2 rounded-full border border-border bg-paper px-3 py-1.5">
+                  <UserAvatar
+                    name={accountName}
+                    avatarUrl={currentUser.avatarUrl}
+                    className="h-8 w-8 text-xs"
+                  />
                   <div className="leading-tight">
-                    <p className="text-sm font-medium text-ink">{currentUser.username}</p>
-                    <p className="text-[11px] text-ink-faint">{currentUser.email}</p>
+                    <p className="text-sm font-medium text-ink">{accountName}</p>
+                    <p className="text-[11px] text-ink-faint">@{currentUser.username}</p>
                   </div>
                   <Badge variant={currentUser.role === "admin" ? "gold" : "cream"}>
-                    {currentUser.role}
+                    {roleLabels[currentUser.role]}
                   </Badge>
                 </div>
                 <Button asChild size="sm" className="shadow-sm">
                   <Link href="/create">
                     <PenSquare className="h-3.5 w-3.5" />
-                    New Flipbook
+                    {copy.newFlipbook}
                   </Link>
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleLogout} loading={isPending}>
                   <LogOut className="h-3.5 w-3.5" />
-                  Logout
+                  {copy.logout}
                 </Button>
               </>
             ) : (
@@ -100,13 +121,13 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
                 <Button asChild variant="ghost" size="sm">
                   <Link href="/login">
                     <LogIn className="h-3.5 w-3.5" />
-                    Login
+                    {copy.login}
                   </Link>
                 </Button>
                 <Button asChild size="sm" className="shadow-sm">
                   <Link href="/register">
                     <UserPlus className="h-3.5 w-3.5" />
-                    Create Account
+                    {copy.createAccount}
                   </Link>
                 </Button>
               </>
@@ -116,7 +137,9 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
           <button
             className="md:hidden p-2 text-ink-light hover:text-ink"
             onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle menu"
+            aria-label={copy.toggleMenu}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-site-navigation"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -124,19 +147,24 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t border-border/60 bg-cream px-4 pb-4 pt-3 space-y-1">
+        <div
+          id="mobile-site-navigation"
+          className="md:hidden border-t border-border/60 bg-cream px-4 pb-4 pt-3 space-y-1"
+        >
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
+              aria-current={pathname === link.href ? "page" : undefined}
               className={cn(
-                "block px-3 py-2 rounded-md text-sm font-medium",
+                "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium",
                 pathname === link.href
                   ? "text-forest bg-forest/8"
                   : "text-ink-light hover:bg-cream-200"
               )}
               onClick={() => setMobileOpen(false)}
             >
+              <link.icon className="h-4 w-4" />
               {link.label}
             </Link>
           ))}
@@ -145,36 +173,49 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
             <div className="pt-3 space-y-3">
               <div className="rounded-xl border border-border bg-paper px-3 py-3">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-ink">{currentUser.username}</p>
-                    <p className="truncate text-xs text-ink-faint">{currentUser.email}</p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <UserAvatar
+                      name={accountName}
+                      avatarUrl={currentUser.avatarUrl}
+                      className="h-9 w-9 text-xs"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">{accountName}</p>
+                      <p className="truncate text-xs text-ink-faint">@{currentUser.username}</p>
+                    </div>
                   </div>
                   <Badge variant={currentUser.role === "admin" ? "gold" : "cream"}>
-                    {currentUser.role}
+                    {roleLabels[currentUser.role]}
                   </Badge>
                 </div>
               </div>
+              <Button asChild variant="outline" size="sm" className="w-full">
+                <Link href="/settings" onClick={() => setMobileOpen(false)}>
+                  <Settings className="h-3.5 w-3.5" />
+                  {copy.settings}
+                </Link>
+              </Button>
               <Button asChild size="sm" className="w-full">
                 <Link href="/create" onClick={() => setMobileOpen(false)}>
                   <PenSquare className="h-3.5 w-3.5" />
-                  Create Flipbook
+                  {copy.createFlipbook}
                 </Link>
               </Button>
               <Button variant="outline" size="sm" className="w-full" onClick={handleLogout} loading={isPending}>
                 <LogOut className="h-3.5 w-3.5" />
-                Logout
+                {copy.logout}
               </Button>
             </div>
           ) : (
             <div className="pt-3 grid grid-cols-2 gap-2">
               <Button asChild variant="outline" size="sm">
                 <Link href="/login" onClick={() => setMobileOpen(false)}>
-                  Login
+                  {copy.login}
                 </Link>
               </Button>
               <Button asChild size="sm">
                 <Link href="/register" onClick={() => setMobileOpen(false)}>
-                  Create Account
+                  {copy.createAccount}
                 </Link>
               </Button>
             </div>

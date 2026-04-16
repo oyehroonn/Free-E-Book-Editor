@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Inter, Playfair_Display } from "next/font/google"
 import { Toaster } from "sonner"
+import { getDictionary } from "@/lib/i18n"
 import "./globals.css"
 
 export const runtime = "edge"
@@ -32,18 +33,26 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const messages = await getDictionary()
+
   return (
     <html
-      lang="en"
+      lang={messages.meta.htmlLang}
       className={`${inter.variable} ${playfair.variable}`}
       suppressHydrationWarning
     >
       <body>
+        <a
+          href="#main-content"
+          className="sr-only absolute left-4 top-4 z-[100] rounded-md bg-paper px-4 py-2 text-sm font-medium text-ink shadow-card focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-gold"
+        >
+          Skip to main content
+        </a>
         {children}
         <Toaster
           position="bottom-right"

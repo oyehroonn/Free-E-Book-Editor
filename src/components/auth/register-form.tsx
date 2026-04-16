@@ -6,12 +6,14 @@ import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { registerUser } from "@/lib/actions/auth"
+import { formatMessage, type Dictionary } from "@/lib/i18n-data"
 
 interface RegisterFormProps {
   nextPath: string
+  copy: Dictionary["register"]["form"]
 }
 
-export function RegisterForm({ nextPath }: RegisterFormProps) {
+export function RegisterForm({ nextPath, copy }: RegisterFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -28,7 +30,7 @@ export function RegisterForm({ nextPath }: RegisterFormProps) {
         return
       }
 
-      toast.success(`Account created for ${result.data.username}`)
+      toast.success(formatMessage(copy.success, { username: result.data.username }))
       router.push(nextPath)
       router.refresh()
     })
@@ -38,24 +40,24 @@ export function RegisterForm({ nextPath }: RegisterFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
         name="username"
-        label="Username"
-        placeholder="storybookmaker"
+        label={copy.usernameLabel}
+        placeholder={copy.usernamePlaceholder}
         autoComplete="username"
         required
       />
       <Input
         name="email"
-        label="Email"
+        label={copy.emailLabel}
         type="email"
-        placeholder="you@example.com"
+        placeholder={copy.emailPlaceholder}
         autoComplete="email"
         required
       />
       <Input
         name="password"
-        label="Password"
+        label={copy.passwordLabel}
         type="password"
-        placeholder="Create a password"
+        placeholder={copy.passwordPlaceholder}
         autoComplete="new-password"
         required
       />
@@ -63,7 +65,7 @@ export function RegisterForm({ nextPath }: RegisterFormProps) {
       {errors.form && <p className="text-sm text-red-500">{errors.form}</p>}
 
       <Button type="submit" className="w-full" size="lg" loading={isPending}>
-        Create Account
+        {copy.submit}
       </Button>
     </form>
   )

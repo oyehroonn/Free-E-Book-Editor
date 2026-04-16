@@ -3,6 +3,7 @@ import { Navbar } from "@/components/marketing/navbar"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { RegisterForm } from "@/components/auth/register-form"
 import { getCurrentUser } from "@/lib/auth"
+import { getDictionary } from "@/lib/i18n"
 
 export const runtime = "edge"
 
@@ -15,7 +16,7 @@ interface RegisterPageProps {
 }
 
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
-  const currentUser = await getCurrentUser()
+  const [currentUser, messages] = await Promise.all([getCurrentUser(), getDictionary()])
   const params = await searchParams
   const nextPath = params.next && params.next.startsWith("/") ? params.next : "/dashboard"
 
@@ -28,12 +29,13 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
       <Navbar />
       <main className="flex-1 flex items-start justify-center px-4 py-16">
         <AuthShell
-          title="Create your account"
-          description="Use a basic MVP account to save your flipbooks, return to the editor later, and control when each book becomes public."
-          form={<RegisterForm nextPath={nextPath} />}
-          alternateText="Already have an account?"
-          alternateLabel="Sign in"
+          title={messages.register.title}
+          description={messages.register.description}
+          form={<RegisterForm nextPath={nextPath} copy={messages.register.form} />}
+          alternateText={messages.register.alternateText}
+          alternateLabel={messages.register.alternateLabel}
           alternateHref={`/login?next=${encodeURIComponent(nextPath)}`}
+          copy={messages.authShell}
         />
       </main>
     </div>

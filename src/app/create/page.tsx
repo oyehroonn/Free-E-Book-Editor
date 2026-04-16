@@ -1,6 +1,9 @@
 import { Navbar } from "@/components/marketing/navbar"
 import { CreateBookForm } from "@/components/create/create-book-form"
 import { requireCurrentUser } from "@/lib/auth"
+import { CATEGORIES } from "@/lib/utils"
+import { getDictionary, getLocaleContext } from "@/lib/i18n"
+import { formatMessage, getCategoryLabel } from "@/lib/i18n-data"
 
 export const runtime = "edge"
 
@@ -10,6 +13,11 @@ export const metadata = {
 
 export default async function CreatePage() {
   const currentUser = await requireCurrentUser("/create")
+  const [messages, { locale }] = await Promise.all([getDictionary(), getLocaleContext()])
+  const categories = CATEGORIES.map((value) => ({
+    value,
+    label: getCategoryLabel(locale, value) ?? value,
+  }))
 
   return (
     <div className="min-h-screen flex flex-col bg-cream">
@@ -18,14 +26,18 @@ export default async function CreatePage() {
         <div className="w-full max-w-xl">
           <div className="mb-8">
             <h1 className="font-serif text-4xl font-bold text-forest mb-2">
-              Create a new book
+              {messages.create.title}
             </h1>
             <p className="text-ink-muted">
-              You are signed in as <span className="font-medium text-ink">{currentUser.username}</span>. Fill in the basics now and edit the rest later in the ebook editor.
+              {formatMessage(messages.create.description, { username: currentUser.username })}
             </p>
           </div>
           <div className="bg-paper rounded-2xl border border-border shadow-card p-8">
-            <CreateBookForm defaultAuthorName={currentUser.username} />
+            <CreateBookForm
+              defaultAuthorName={currentUser.username}
+              categories={categories}
+              copy={messages.create.form}
+            />
           </div>
         </div>
       </main>

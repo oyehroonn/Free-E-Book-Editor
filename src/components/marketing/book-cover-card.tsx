@@ -2,11 +2,14 @@ import Link from "next/link"
 import { Eye, BookOpen } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn, resolvePublicAssetUrl } from "@/lib/utils"
+import { getCategoryLabel, getIntlLocale, type AppLocale, type Dictionary } from "@/lib/i18n-data"
 import type { Book } from "@/types"
 
 interface BookCoverCardProps {
   book: Book
   className?: string
+  locale: AppLocale
+  copy: Dictionary["bookCard"]
 }
 
 const COVER_COLORS = [
@@ -23,9 +26,11 @@ function getCoverColor(id: string): string {
   return COVER_COLORS[idx]
 }
 
-export function BookCoverCard({ book, className }: BookCoverCardProps) {
+export function BookCoverCard({ book, className, locale, copy }: BookCoverCardProps) {
   const color = getCoverColor(book.id)
   const coverImage = resolvePublicAssetUrl(book.coverImage) ?? book.coverImage
+  const categoryLabel = getCategoryLabel(locale, book.category)
+  const viewCount = new Intl.NumberFormat(getIntlLocale(locale)).format(book.viewCount)
 
   return (
     <Link
@@ -53,7 +58,7 @@ export function BookCoverCard({ book, className }: BookCoverCardProps) {
           {/* Hover overlay */}
           <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/20 transition-colors duration-300 flex items-center justify-center">
             <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-paper/90 text-ink text-xs font-medium px-3 py-1.5 rounded-full shadow-sm">
-              Open Book
+              {copy.openBook}
             </span>
           </div>
 
@@ -69,17 +74,17 @@ export function BookCoverCard({ book, className }: BookCoverCardProps) {
           {book.subtitle && (
             <p className="text-xs text-ink-muted mt-0.5 line-clamp-1">{book.subtitle}</p>
           )}
-          <p className="text-xs text-ink-light mt-1">by {book.authorName}</p>
+          <p className="text-xs text-ink-light mt-1">{copy.by} {book.authorName}</p>
 
           <div className="flex items-center justify-between mt-2">
-            {book.category && (
+            {categoryLabel && (
               <Badge variant="cream" className="text-[10px] px-2 py-0.5">
-                {book.category}
+                {categoryLabel}
               </Badge>
             )}
             <span className="flex items-center gap-1 text-[10px] text-ink-faint ml-auto">
               <Eye className="h-3 w-3" />
-              {book.viewCount}
+              {viewCount}
             </span>
           </div>
         </div>

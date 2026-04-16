@@ -9,13 +9,16 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { logoutUser } from "@/lib/actions/auth"
+import type { Dictionary } from "@/lib/i18n-data"
 import type { User } from "@/types"
 
 interface NavbarClientProps {
   currentUser: User | null
+  copy: Dictionary["navbar"]
+  roleLabels: Dictionary["roles"]
 }
 
-export function NavbarClient({ currentUser }: NavbarClientProps) {
+export function NavbarClient({ currentUser, copy, roleLabels }: NavbarClientProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -23,10 +26,10 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
 
   const navLinks = currentUser
     ? [
-        { href: "/explore", label: "Explore" },
-        { href: "/dashboard", label: "Dashboard" },
+        { href: "/explore", label: copy.explore },
+        { href: "/dashboard", label: copy.dashboard },
       ]
-    : [{ href: "/explore", label: "Explore" }]
+    : [{ href: "/explore", label: copy.explore }]
 
   function handleLogout() {
     startTransition(async () => {
@@ -36,7 +39,7 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
         return
       }
 
-      toast.success("Signed out")
+      toast.success(copy.signedOut)
       router.refresh()
       setMobileOpen(false)
     })
@@ -81,18 +84,18 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
                     <p className="text-[11px] text-ink-faint">{currentUser.email}</p>
                   </div>
                   <Badge variant={currentUser.role === "admin" ? "gold" : "cream"}>
-                    {currentUser.role}
+                    {roleLabels[currentUser.role]}
                   </Badge>
                 </div>
                 <Button asChild size="sm" className="shadow-sm">
                   <Link href="/create">
                     <PenSquare className="h-3.5 w-3.5" />
-                    New Flipbook
+                    {copy.newFlipbook}
                   </Link>
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleLogout} loading={isPending}>
                   <LogOut className="h-3.5 w-3.5" />
-                  Logout
+                  {copy.logout}
                 </Button>
               </>
             ) : (
@@ -100,13 +103,13 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
                 <Button asChild variant="ghost" size="sm">
                   <Link href="/login">
                     <LogIn className="h-3.5 w-3.5" />
-                    Login
+                    {copy.login}
                   </Link>
                 </Button>
                 <Button asChild size="sm" className="shadow-sm">
                   <Link href="/register">
                     <UserPlus className="h-3.5 w-3.5" />
-                    Create Account
+                    {copy.createAccount}
                   </Link>
                 </Button>
               </>
@@ -116,7 +119,7 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
           <button
             className="md:hidden p-2 text-ink-light hover:text-ink"
             onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle menu"
+            aria-label={copy.toggleMenu}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -150,31 +153,31 @@ export function NavbarClient({ currentUser }: NavbarClientProps) {
                     <p className="truncate text-xs text-ink-faint">{currentUser.email}</p>
                   </div>
                   <Badge variant={currentUser.role === "admin" ? "gold" : "cream"}>
-                    {currentUser.role}
+                    {roleLabels[currentUser.role]}
                   </Badge>
                 </div>
               </div>
               <Button asChild size="sm" className="w-full">
                 <Link href="/create" onClick={() => setMobileOpen(false)}>
                   <PenSquare className="h-3.5 w-3.5" />
-                  Create Flipbook
+                  {copy.createFlipbook}
                 </Link>
               </Button>
               <Button variant="outline" size="sm" className="w-full" onClick={handleLogout} loading={isPending}>
                 <LogOut className="h-3.5 w-3.5" />
-                Logout
+                {copy.logout}
               </Button>
             </div>
           ) : (
             <div className="pt-3 grid grid-cols-2 gap-2">
               <Button asChild variant="outline" size="sm">
                 <Link href="/login" onClick={() => setMobileOpen(false)}>
-                  Login
+                  {copy.login}
                 </Link>
               </Button>
               <Button asChild size="sm">
                 <Link href="/register" onClick={() => setMobileOpen(false)}>
-                  Create Account
+                  {copy.createAccount}
                 </Link>
               </Button>
             </div>

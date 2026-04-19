@@ -4,13 +4,15 @@ import { useRouter, usePathname } from "next/navigation"
 import { Search, X } from "lucide-react"
 import { useCallback, useState, useTransition } from "react"
 import { cn } from "@/lib/utils"
-import type { Category } from "@/lib/utils"
+import type { Dictionary } from "@/lib/i18n-data"
 
 interface ExploreFiltersProps {
   currentSearch?: string
   currentCategory?: string
   currentSort?: string
   categories: readonly string[]
+  categoryLabels: Record<string, string>
+  copy: Dictionary["explore"]["filters"]
 }
 
 export function ExploreFilters({
@@ -18,6 +20,8 @@ export function ExploreFilters({
   currentCategory,
   currentSort,
   categories,
+  categoryLabels,
+  copy,
 }: ExploreFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -64,7 +68,7 @@ export function ExploreFilters({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-muted" />
           <input
             type="text"
-            placeholder="Search by title, author, or description…"
+            placeholder={copy.searchPlaceholder}
             value={searchVal}
             onChange={(e) => setSearchVal(e.target.value)}
             className="w-full h-10 pl-9 pr-4 rounded-lg border border-border bg-paper text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold"
@@ -83,7 +87,7 @@ export function ExploreFilters({
           type="submit"
           className="h-10 px-4 rounded-lg bg-forest text-cream text-sm font-medium hover:bg-forest-600 transition-colors"
         >
-          Search
+          {copy.searchButton}
         </button>
       </form>
 
@@ -98,7 +102,7 @@ export function ExploreFilters({
               : "bg-cream-200 text-ink-light hover:bg-cream-300 border border-border"
           )}
         >
-          All
+          {copy.all}
         </button>
         {categories.map((cat) => (
           <button
@@ -111,17 +115,17 @@ export function ExploreFilters({
                 : "bg-cream-200 text-ink-light hover:bg-cream-300 border border-border"
             )}
           >
-            {cat}
+            {categoryLabels[cat] ?? cat}
           </button>
         ))}
       </div>
 
       {/* Sort */}
       <div className="flex items-center gap-2 text-sm">
-        <span className="text-ink-muted text-xs">Sort by:</span>
+        <span className="text-ink-muted text-xs">{copy.sortBy}</span>
         {[
-          { value: "newest", label: "Newest" },
-          { value: "popular", label: "Most Viewed" },
+          { value: "newest", label: copy.newest },
+          { value: "popular", label: copy.popular },
         ].map((opt) => (
           <button
             key={opt.value}
@@ -139,7 +143,7 @@ export function ExploreFilters({
       </div>
 
       {isPending && (
-        <p className="text-xs text-ink-muted animate-pulse">Updating results…</p>
+        <p className="text-xs text-ink-muted animate-pulse">{copy.updating}</p>
       )}
     </div>
   )

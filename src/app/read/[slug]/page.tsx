@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
-import { getBookBySlug, incrementBookViews } from "@/lib/actions/books"
+import { getBookBySlug } from "@/lib/actions/books"
 import { FlipbookReader } from "@/components/reader/flipbook-reader"
+import { ViewTracker } from "@/components/reader/view-tracker"
 
 export const runtime = "edge"
 
@@ -31,10 +32,10 @@ export default async function ReadPage({ params }: ReadPageProps) {
 
   if (!book) notFound()
 
-  // Fire-and-forget view count (don't await)
-  if (book.status === "published") {
-    incrementBookViews(book.id)
-  }
-
-  return <FlipbookReader book={book} />
+  return (
+    <>
+      {book.status === "published" && <ViewTracker bookId={book.id} />}
+      <FlipbookReader book={book} />
+    </>
+  )
 }

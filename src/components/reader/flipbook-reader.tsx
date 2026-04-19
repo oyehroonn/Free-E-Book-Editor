@@ -140,11 +140,30 @@ export function FlipbookReader({ book }: FlipbookReaderProps) {
       onTouchEnd={handleTouchEnd}
     >
       {/* ─── Top Bar ─────────────────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between px-4 py-3 bg-[#1A1410]/80 backdrop-blur-sm z-20 flex-shrink-0">
+      <header
+        aria-label="Reader navigation"
+        className="flex items-center justify-between px-4 py-3 bg-[#1A1410]/80 backdrop-blur-sm z-20 flex-shrink-0"
+      >
         <div className="flex items-center gap-3">
-          <Link href="/" className="text-[#C9A84C]/70 hover:text-[#C9A84C] transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+          <nav aria-label="Reader shortcuts" className="flex items-center gap-2">
+            <Link
+              href="/explore"
+              aria-label="Back to explore"
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[#C9A84C]/70 hover:bg-white/5 hover:text-[#C9A84C] transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:block text-xs font-medium">Explore</span>
+            </Link>
+            <Link
+              href="/"
+              aria-label="Return home"
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[#C9A84C]/70 hover:bg-white/5 hover:text-[#C9A84C] transition-colors"
+            >
+              <Home className="h-4 w-4" />
+              <span className="hidden sm:block text-xs font-medium">Home</span>
+            </Link>
+          </nav>
+          <div className="h-5 w-px bg-white/10" />
           <div>
             <p className="font-serif text-sm font-semibold text-[#F5EFE6] leading-none truncate max-w-[200px] sm:max-w-xs">
               {book.title}
@@ -160,6 +179,9 @@ export function FlipbookReader({ book }: FlipbookReaderProps) {
           {book.pages.length > 0 && (
             <button
               onClick={() => setIsTOCOpen(true)}
+              aria-label="Open table of contents"
+              aria-expanded={isTOCOpen}
+              aria-controls="reader-table-of-contents"
               className="p-2 text-[#F5EFE6]/50 hover:text-[#F5EFE6] transition-colors rounded hover:bg-white/10"
               title="Table of Contents"
             >
@@ -168,6 +190,7 @@ export function FlipbookReader({ book }: FlipbookReaderProps) {
           )}
           <button
             onClick={toggleFullscreen}
+            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
             className="p-2 text-[#F5EFE6]/50 hover:text-[#F5EFE6] transition-colors rounded hover:bg-white/10"
             title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
@@ -177,7 +200,7 @@ export function FlipbookReader({ book }: FlipbookReaderProps) {
       </header>
 
       {/* ─── Book Stage ──────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 relative book-container">
+      <main id="main-content" className="flex-1 flex items-center justify-center p-4 sm:p-8 relative book-container">
 
         {/* Prev arrow */}
         <button
@@ -247,7 +270,7 @@ export function FlipbookReader({ book }: FlipbookReaderProps) {
         >
           <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
-      </div>
+      </main>
 
       {/* ─── Bottom Progress ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-center gap-3 pb-4 flex-shrink-0">
@@ -283,6 +306,8 @@ export function FlipbookReader({ book }: FlipbookReaderProps) {
               onClick={() => setIsTOCOpen(false)}
             />
             <motion.aside
+              id="reader-table-of-contents"
+              aria-label="Table of contents"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
@@ -291,7 +316,11 @@ export function FlipbookReader({ book }: FlipbookReaderProps) {
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
                 <h2 className="font-serif text-[#F5EFE6] font-semibold">Contents</h2>
-                <button onClick={() => setIsTOCOpen(false)} className="text-[#F5EFE6]/40 hover:text-[#F5EFE6]">
+                <button
+                  onClick={() => setIsTOCOpen(false)}
+                  aria-label="Close table of contents"
+                  className="text-[#F5EFE6]/40 hover:text-[#F5EFE6]"
+                >
                   <X className="h-4 w-4" />
                 </button>
               </div>

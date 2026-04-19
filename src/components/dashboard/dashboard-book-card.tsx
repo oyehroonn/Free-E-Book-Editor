@@ -3,22 +3,26 @@ import { ExternalLink, FilePenLine, Globe, Lock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ShareBookButton } from "@/components/books/share-book-button"
+import { getCategoryLabel, getIntlLocale, type AppLocale, type Dictionary } from "@/lib/i18n-data"
 import type { Book } from "@/types"
 
 interface DashboardBookCardProps {
   book: Book
+  locale: AppLocale
+  copy: Dictionary["dashboard"]["card"]
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
+function formatDate(locale: AppLocale, value: string) {
+  return new Intl.DateTimeFormat(getIntlLocale(locale), {
     month: "short",
     day: "numeric",
     year: "numeric",
   }).format(new Date(value))
 }
 
-export function DashboardBookCard({ book }: DashboardBookCardProps) {
+export function DashboardBookCard({ book, locale, copy }: DashboardBookCardProps) {
   const isPublished = book.status === "published"
+  const categoryLabel = getCategoryLabel(locale, book.category)
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-paper shadow-card">
@@ -28,7 +32,7 @@ export function DashboardBookCard({ book }: DashboardBookCardProps) {
             <img src={book.coverImage} alt={book.title} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center px-3 text-center text-xs text-ink-faint">
-              No cover yet
+              {copy.noCover}
             </div>
           )}
         </div>
@@ -39,31 +43,32 @@ export function DashboardBookCard({ book }: DashboardBookCardProps) {
               {isPublished ? (
                 <>
                   <Globe className="h-3 w-3" />
-                  Public
+                  {copy.public}
                 </>
               ) : (
                 <>
                   <Lock className="h-3 w-3" />
-                  Draft
+                  {copy.draft}
                 </>
               )}
             </Badge>
-            {book.category && <Badge variant="cream">{book.category}</Badge>}
+            {categoryLabel && <Badge variant="cream">{categoryLabel}</Badge>}
           </div>
 
           <h2 className="font-serif text-2xl font-semibold text-ink">{book.title}</h2>
           <p className="mt-1 text-sm text-ink-muted">
-            {book.description || "No description yet. Open the editor to flesh out your flipbook."}
+            {book.description || copy.noDescription}
           </p>
 
           <div className="mt-4 grid gap-1 text-xs text-ink-faint sm:grid-cols-2">
-            <p>Author: {book.authorName}</p>
-            <p>Updated: {formatDate(book.updatedAt)}</p>
-            <p>Slug: /read/{book.slug}</p>
+            <p>{copy.author}: {book.authorName}</p>
+            <p>{copy.updated}: {formatDate(locale, book.updatedAt)}</p>
+            <p>{copy.slug}: /read/{book.slug}</p>
+            <p>{copy.views}: {new Intl.NumberFormat(getIntlLocale(locale)).format(book.viewCount)}</p>
             <p>
               {isPublished
-                ? "Visible in Explore and Featured"
-                : "Private until you publish it"}
+                ? copy.visiblePublic
+                : copy.visiblePrivate}
             </p>
           </div>
 
@@ -71,7 +76,7 @@ export function DashboardBookCard({ book }: DashboardBookCardProps) {
             <Button asChild size="sm">
               <Link href={`/edit/${book.id}`}>
                 <FilePenLine className="h-3.5 w-3.5" />
-                Edit in Ebook Editor
+                {copy.editButton}
               </Link>
             </Button>
 
@@ -81,13 +86,13 @@ export function DashboardBookCard({ book }: DashboardBookCardProps) {
                 <Button asChild variant="outline" size="sm">
                   <Link href={`/read/${book.slug}`} target="_blank">
                     <ExternalLink className="h-3.5 w-3.5" />
-                    Open Public Page
+                    {copy.openPublicPage}
                   </Link>
                 </Button>
               </>
             ) : (
               <p className="self-center text-sm text-ink-muted">
-                Publish this flipbook from the editor to make it public and shareable.
+                {copy.publishHint}
               </p>
             )}
           </div>
